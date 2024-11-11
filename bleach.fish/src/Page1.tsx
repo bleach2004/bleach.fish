@@ -3,7 +3,7 @@ import React from 'react';
 const Page1: React.FC = () => {
   return (
     <div style={styles.container}>
-      <img src="./src/assets/page1/1.png" style={styles.image} />
+      <img src="/page1/1.png" style={styles.image} />
       {/* <img src="./src/assets/page1/2.png" style={styles.image} />
       <img src="./src/assets/page1/1.png" className='scale-x-[-1]' style={styles.image} /> */}
     </div>
