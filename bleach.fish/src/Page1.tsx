@@ -11,7 +11,7 @@ const Page1: React.FC = () => {
         <a>BLOG</a>
         <a>CAVERN</a>
       </div>
-      <img src='page1/1.png' className='chess'></img>
+      {/* <img src='page1/1.png' className='chess'></img> */}
     </div>
 
   );

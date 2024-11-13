@@ -56,5 +56,6 @@ a:active {
 
 .chess {
   margin: 50px;
-  width: 10em;
+  width: 15em;
+  image-rendering: pixelated;
 }
