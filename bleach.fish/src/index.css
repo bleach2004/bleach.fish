@@ -17,9 +17,9 @@ html, body {
   font-style: normal;
 }
 
-p {
-  line-height: 1em;
+p, a {
   color: red;
+  line-height: 1em;
   font-family: "blockzone";
   white-space: pre;
   font-size: 2em;

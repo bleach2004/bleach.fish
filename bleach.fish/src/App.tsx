@@ -1,12 +1,23 @@
 import './App.css'
-import Page1 from  './Page1.tsx'
+import Home from  './Home.tsx'
+import Audio from  './Audio.tsx'
+import Track from  './Track.tsx'
+
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 
 function App() {
 
   return (
     <>
-    <div className='w-screen items-center'>
-      <Page1 />
+    <div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/audio" element={<Audio />} />
+        <Route path="/audio/:id" element={<Track />} />
+      </Routes>
+    </Router>
     </div>
     </>
   )
