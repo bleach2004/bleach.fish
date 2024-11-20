@@ -2,17 +2,6 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import tracks from './music/tracks.json'; // Adjust path if needed
 
-interface Song {
-  id: string;
-  title: string;
-  artist: string;
-  coverArt: string;
-  spotify: string;
-  bandcamp: string;
-  soundcloud: string;
-  releaseDate: string;
-  lyrics: string;
-}
 const Track: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Get the dynamic parameter from the URL
 
