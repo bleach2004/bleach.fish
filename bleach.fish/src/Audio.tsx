@@ -13,7 +13,6 @@ const Audio: React.FC = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>Audio</h1>
       <div
         style={{
           display: 'grid',
@@ -31,7 +30,7 @@ const Audio: React.FC = () => {
               src={song.coverArt}
               alt={song.title}
               style={{
-                width: '200px',
+                width: '100px',
                 cursor: 'pointer',
               }}
             />

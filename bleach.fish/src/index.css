@@ -18,11 +18,18 @@ html, body {
 }
 
 p, a {
-  color: red;
   line-height: 1em;
   font-family: "blockzone";
   white-space: pre;
-  font-size: 2em;
+  font-size: 32px;
+}
+
+.text-red {
+  color: red;
+}
+
+.text-white {
+  color: white;
 }
 
 .meat a {
@@ -44,6 +51,10 @@ a:hover {
 }
 
 a:active {
+  color: white;
+}
+
+a {
   color: white;
 }
 

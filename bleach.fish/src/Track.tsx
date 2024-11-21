@@ -26,14 +26,14 @@ const Track: React.FC = () => {
         
         <div>
           <p className='text-white'>{currentSong.title}</p>
-          <p className='text-white'>{currentSong.artist}</p><br />
+          <p className='text-red'>{currentSong.artist}</p><br />
         </div>
       </div>
   
       <br /><p className='text-white'>{currentSong.lyrics || '[NO LYRICS]'}</p><br />
-      <a href={currentSong.spotify} target="_blank" rel="noopener noreferrer">SPOTIFY</a><br />
-      <a href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">BANDCAMP</a><br />
-      <a href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">SOUNDCLOUD</a><br /><br />
+      <a className='text-white' href={currentSong.spotify} target="_blank" rel="noopener noreferrer">SPOTIFY</a><br />
+      <a className='text-white' href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">BANDCAMP</a><br />
+      <a className='text-white' href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">SOUNDCLOUD</a><br /><br />
       <p className='text-white'>{currentSong.releaseDate}</p><br />
     </div>
   );
