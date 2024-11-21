@@ -23,9 +23,8 @@ const Blog: React.FC = () => {
           <Link
             key={post.id}
             to={`/blog/${post.id}`}
-            style={{ textDecoration: 'none' }}
           >
-          <p>{post.date}</p>
+          <p className='text-white'>{post.date}</p>
           </Link>
         ))}
       </div>
