@@ -16,7 +16,9 @@ const Post: React.FC = () => {
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}> {/* Flex container */}
         <div>
-          <p className="arial p text-white">{currentPost.text}</p>
+          {currentPost.text && (
+            <p className="arial p text-white">{currentPost.text}</p>
+          )}
           {/* Conditionally render the image if imageLink exists */}
           {currentPost.imageLink && (
             <img 
