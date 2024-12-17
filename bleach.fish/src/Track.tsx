@@ -16,13 +16,13 @@ const Track: React.FC = () => {
     <div className='track-wrapper' style={{ padding: '20px' }}>
       <div className="track-container">
         <img
-          className="cover"
+          className="cover-static"
           src={currentSong.coverArt}
           alt={currentSong.title}
         />
         <div className="track-title">
-          <p className="typewriter h2 text-white">{currentSong.title}</p>
-          <p className="typewriter h2 text-purple">{currentSong.artist}</p>
+          <p className="roboto h2 text-white">{currentSong.title}</p>
+          <p className="roboto h3 text-red">{currentSong.artist}</p>
         </div>
       </div>
       <div className='track-info'>

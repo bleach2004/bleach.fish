@@ -51,7 +51,7 @@ p, a {
 }
 
 .text-red {
-  color: red;
+  color: rgb(167 139 250);
 }
 
 .text-purple {
@@ -73,6 +73,11 @@ p, a {
 
 .h2 {
   font-size: 2em;
+  line-height: 1em;
+}
+
+.h3 {
+  font-size: 1.5em;
   line-height: 1em;
 }
 
@@ -116,14 +121,22 @@ a {
 
 .cover {
   outline-style: solid;
-  outline-color: purple;
+  outline-color: rgb(167 139 250);
+  outline-offset: 3px;
+  outline-width: 2px;
+  width: 150px;
+}
+
+.cover-static {
+  outline-style: solid;
+  outline-color: rgb(167 139 250);
   outline-offset: 3px;
   outline-width: 2px;
   width: 150px;
 }
 
 .cover:hover {
-  outline-color: rgb(102, 0, 102);
+  outline-color: rgb(144, 111, 243);
   outline-offset: 2px;
   outline-width: 2px;
 }
@@ -152,19 +165,6 @@ a {
   margin-left: 20px; /* Space between cover art and text */
 }
 
-.cover {
-  width: 100px; /* Default width for desktop */
-  outline-style: solid;
-  outline-color: purple;
-  outline-offset: 3px;
-  outline-width: 2px;
-}
-
-.cover:hover {
-  outline-color: rgb(102, 0, 102);
-  outline-offset: 2px;
-  outline-width: 2px;
-}
 
 .song-grid {
   padding: 20px;

@@ -5,7 +5,7 @@ const Home: React.FC = () => {
   return (
     <div className="skin vert-center-wrapper">
       <div className="meat text-center">
-        <p className='text-purple typewriter h1'>BLEACH'S CORNER</p>
+        <p className='text-violet-400	 roboto h1'>bleach's corner</p>
         <Link to="/audio" className='roboto p'>audio</Link>
         {/* <Link to="/visual">VISUAL</Link>
         <Link to="/scrapyard">SCRAPYARD</Link> */}
