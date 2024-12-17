@@ -12,19 +12,13 @@ const Blog: React.FC = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-          gap: '16px',
-        }}
-      >
+      <div>
         {posts.map((post) => (
           <Link
             key={post.id}
             to={`/blog/${post.id}`}
           >
-          <p className='text-white'>{post.date}</p>
+          <a className='arial p text-white postlink'>{post.date}</a>
           </Link>
         ))}
       </div>

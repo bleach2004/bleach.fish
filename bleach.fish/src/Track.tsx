@@ -15,7 +15,8 @@ const Track: React.FC = () => {
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}> {/* Flex container */}
-        <img
+        <img 
+        className='cover'
           src={currentSong.coverArt}
           alt={currentSong.title}
           style={{
@@ -25,16 +26,16 @@ const Track: React.FC = () => {
         />
         
         <div>
-          <p className='text-white'>{currentSong.title}</p>
-          <p className='text-red'>{currentSong.artist}</p><br />
+          <p className='typewriter h2 text-white'>{currentSong.title}</p>
+          <p className='typewriter h2 text-purple'>{currentSong.artist}</p><br />
         </div>
       </div>
   
-      <br /><p className='text-white'>{currentSong.lyrics || '[NO LYRICS]'}</p><br />
-      <a className='text-white' href={currentSong.spotify} target="_blank" rel="noopener noreferrer">SPOTIFY</a><br />
-      <a className='text-white' href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">BANDCAMP</a><br />
-      <a className='text-white' href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">SOUNDCLOUD</a><br /><br />
-      <p className='text-white'>{currentSong.releaseDate}</p><br />
+      <br /><br /><p className='arial p text-white'>{currentSong.lyrics || '[no lyrics]'}</p><br />
+      <a className='arial p text-white' href={currentSong.spotify} target="_blank" rel="noopener noreferrer">spotify</a><br />
+      <a className='arial p text-white' href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">bandcamp</a><br />
+      <a className='arial p text-white' href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">soundcloud</a><br /><br />
+      <p className='arial p text-white'>{currentSong.releaseDate}</p><br />
     </div>
   );
 };

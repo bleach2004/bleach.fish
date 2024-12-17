@@ -11,6 +11,14 @@ html, body {
 }
 
 @font-face {
+  font-family: 'LoveLetter';
+  src: url('/fonts/LoveLetterTW.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'blockzone';
   src: url('/fonts/blockzone.woff2') format('woff2');
   font-weight: normal;
@@ -19,25 +27,52 @@ html, body {
 
 p, a {
   line-height: 1em;
-  font-family: "blockzone";
+
   white-space: pre;
-  font-size: 32px;
+
 }
 
 .text-red {
   color: red;
 }
 
+.text-purple {
+  color: purple;
+}
+
 .text-white {
   color: white;
+}
+
+.typewriter {
+  font-family: "LoveLetter";
+}
+
+.arial {
+  font-family: "Arial";
+}
+
+.h1 {
+  font-size: 2.3em;
+}
+
+.h2 {
+  font-size: 2em;
+}
+
+.p {
+  font-size: 1.5em;
+}
+
+.postlink {
+  line-height: 32px;
+  display: block;
 }
 
 .meat a {
   display: block;
   line-height: 1em;
-  color: white;
-  font-family: "blockzone";
-  font-size: 2em;
+
 }
 
 a:visited {
@@ -63,6 +98,28 @@ a {
   justify-content: center;
   align-items: center;
   height: 100vh;
+}
+
+.cover {
+  outline-style: solid;
+  outline-color: purple;
+  outline-offset: 3px;
+  outline-width: 2px;
+}
+
+.cover:hover {
+  outline-color: rgb(102, 0, 102);
+  outline-offset: 2px;
+  outline-width: 2px;
+}
+
+.back-button {
+  font-family: arial;
+  color: white;
+  font-size: 1.5em;
+  position: fixed;
+  bottom: 20px;
+  left: 30px;
 }
 
 .chess {

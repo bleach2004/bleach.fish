@@ -26,7 +26,8 @@ const Audio: React.FC = () => {
             to={`/audio/${song.id}`}
             style={{ textDecoration: 'none' }}
           >
-            <img
+            <img 
+              className='cover'
               src={song.coverArt}
               alt={song.title}
               style={{
