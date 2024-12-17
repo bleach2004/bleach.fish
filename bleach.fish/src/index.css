@@ -166,6 +166,10 @@ a {
   outline-width: 2px;
 }
 
+.song-grid {
+  padding: 10px;
+}
+
 /* Responsive Design */
 
 @media (max-width: 668px) {
