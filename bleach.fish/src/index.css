@@ -44,7 +44,7 @@ vert-center-wrapper {
 }
 
 p, a {
-  line-height: 1em;
+  line-height: 1.3em;
 
   white-space: pre;
 
@@ -72,6 +72,7 @@ p, a {
 
 .h2 {
   font-size: 2em;
+  line-height: 1em;
 }
 
 .p {
@@ -85,8 +86,6 @@ p, a {
 
 .meat a {
   display: block;
-  line-height: 1em;
-
 }
 
 a:visited {
