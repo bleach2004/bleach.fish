@@ -8,6 +8,7 @@
 html, body {
   margin: 2em;
   overflow: hidden;
+  background-color: black;
 }
 
 @font-face {
@@ -105,6 +106,7 @@ a {
   outline-color: purple;
   outline-offset: 3px;
   outline-width: 2px;
+  width: 150px;
 }
 
 .cover:hover {
@@ -126,4 +128,70 @@ a {
   margin: 50px;
   width: 15em;
   image-rendering: pixelated;
+}
+
+.track-container {
+  display: flex;
+  align-items: center;
+  flex-direction: row; /* On desktop, keep the items side by side */
+}
+
+.track-title {
+  margin-left: 20px; /* Space between cover art and text */
+}
+
+.cover {
+  width: 100px; /* Default width for desktop */
+  outline-style: solid;
+  outline-color: purple;
+  outline-offset: 3px;
+  outline-width: 2px;
+}
+
+.cover:hover {
+  outline-color: rgb(102, 0, 102);
+  outline-offset: 2px;
+  outline-width: 2px;
+}
+
+/* Responsive Design */
+
+@media (max-width: 668px) {
+  .track-container {
+    flex-direction: column; /* Stack elements vertically on mobile */
+    align-items: center; /* Center the items */
+  }
+
+  .track-wrapper {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center;     /* Center vertically */
+    height: 100vh;           /* Take full viewport height */
+    flex-direction: column;  /* Stack the elements vertically */
+  }
+
+  .cover {
+    width: 30%;  /* Make the cover image 80% of the width */
+    margin-bottom: 20px;  /* Add space below the image */
+  }
+
+  .track-title {
+    text-align: center; /* Center the text on mobile */
+  }
+  
+  .track-info {
+    margin-top: 20px;
+    text-align: center; /* Center the text on mobile */
+  }
+
+  .h2 {
+    font-size: 1.5em; /* Adjust font size for smaller screens */
+  }
+}
+
+@media (max-width: 450px) {
+  .cover {
+    width: 70%;  /* Make the cover image 80% of the width */
+    margin-bottom: 20px;  /* Add space below the image */
+  }
 }

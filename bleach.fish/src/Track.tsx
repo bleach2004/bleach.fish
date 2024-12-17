@@ -13,29 +13,39 @@ const Track: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}> {/* Flex container */}
-        <img 
-        className='cover'
+    <div className='track-wrapper' style={{ padding: '20px' }}>
+      <div className="track-container">
+        <img
+          className="cover"
           src={currentSong.coverArt}
           alt={currentSong.title}
-          style={{
-            width: '100px',
-            marginRight: '20px',  // Add space between the image and the text
-          }}
         />
-        
-        <div>
-          <p className='typewriter h2 text-white'>{currentSong.title}</p>
-          <p className='typewriter h2 text-purple'>{currentSong.artist}</p><br />
+        <div className="track-title">
+          <p className="typewriter h2 text-white">{currentSong.title}</p>
+          <p className="typewriter h2 text-purple">{currentSong.artist}</p>
         </div>
       </div>
-  
-      <br /><br /><p className='arial p text-white'>{currentSong.lyrics || '[no lyrics]'}</p><br />
-      <a className='arial p text-white' href={currentSong.spotify} target="_blank" rel="noopener noreferrer">spotify</a><br />
-      <a className='arial p text-white' href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">bandcamp</a><br />
-      <a className='arial p text-white' href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">soundcloud</a><br /><br />
-      <p className='arial p text-white'>{currentSong.releaseDate}</p><br />
+      <div className='track-info'>
+        <br />
+        <p className="arial p text-white">{currentSong.lyrics || '[no lyrics]'}</p>
+        <br />
+        <a className="arial p text-white" href={currentSong.spotify} target="_blank" rel="noopener noreferrer">
+          spotify
+        </a>
+        <br />
+        <a className="arial p text-white" href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">
+          bandcamp
+        </a>
+        <br />
+        <a className="arial p text-white" href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">
+          soundcloud
+        </a>
+        <br />
+        <br />
+        <p className="arial p text-white">{currentSong.releaseDate}</p>
+        <br />
+      </div>
+
     </div>
   );
 };
