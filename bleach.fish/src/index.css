@@ -51,7 +51,7 @@ p, a {
 }
 
 .text-red {
-  color: rgb(167 139 250);
+  color: pink;
 }
 
 .text-purple {
@@ -121,7 +121,8 @@ a {
 
 .cover {
   outline-style: solid;
-  outline-color: rgb(167 139 250);
+  outline-color: rgb(234 179 8);
+  ;
   outline-offset: 3px;
   outline-width: 2px;
   width: 150px;
@@ -129,14 +130,15 @@ a {
 
 .cover-static {
   outline-style: solid;
-  outline-color: rgb(167 139 250);
+  outline-color: rgb(234 179 8);
   outline-offset: 3px;
   outline-width: 2px;
   width: 150px;
+  margin-bottom: 15px;
 }
 
 .cover:hover {
-  outline-color: rgb(144, 111, 243);
+  outline-color: rgb(202 138 4);
   outline-offset: 2px;
   outline-width: 2px;
 }

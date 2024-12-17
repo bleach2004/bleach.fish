@@ -22,7 +22,7 @@ const Track: React.FC = () => {
         />
         <div className="track-title">
           <p className="roboto h2 text-white">{currentSong.title}</p>
-          <p className="roboto h3 text-red">{currentSong.artist}</p>
+          <p className="roboto h3 text-yellow-500">{currentSong.artist}</p>
         </div>
       </div>
       <div className='track-info'>
