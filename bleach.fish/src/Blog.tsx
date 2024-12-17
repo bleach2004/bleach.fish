@@ -18,7 +18,7 @@ const Blog: React.FC = () => {
             key={post.id}
             to={`/blog/${post.id}`}
           >
-          <a className='arial p text-white postlink'>{post.date}</a>
+          <a className='roboto p text-white postlink'>{post.date}</a>
           </Link>
         ))}
       </div>

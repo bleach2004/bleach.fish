@@ -6,9 +6,20 @@
 }
 
 html, body {
+  height: 100%;  /* Take up full height */
   margin: 2em;
   overflow: hidden;
   background-color: black;
+}
+
+vert-center-wrapper {
+  height: 100%;  /* Take up full height */
+  margin: 0;  /* Remove extra margins */
+  overflow: hidden;  /* Prevent scrolling */
+  background-color: black;
+  display: flex;
+  justify-content: center;  /* Center content horizontally */
+  align-items: center;  /* Center content vertically */
 }
 
 @font-face {
@@ -23,6 +34,12 @@ html, body {
   font-family: 'blockzone';
   src: url('/fonts/blockzone.woff2') format('woff2');
   font-weight: normal;
+  font-style: normal;
+}
+
+.roboto {
+  font-family: "Roboto", sans-serif;
+  font-weight: 400;
   font-style: normal;
 }
 
@@ -47,10 +64,6 @@ p, a {
 
 .typewriter {
   font-family: "LoveLetter";
-}
-
-.arial {
-  font-family: "Arial";
 }
 
 .h1 {
@@ -116,7 +129,6 @@ a {
 }
 
 .back-button {
-  font-family: arial;
   color: white;
   font-size: 1.5em;
   position: fixed;
@@ -162,12 +174,11 @@ a {
     align-items: center; /* Center the items */
   }
 
-  .track-wrapper {
+  .skin {
     display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: center;     /* Center vertically */
-    height: 100vh;           /* Take full viewport height */
-    flex-direction: column;  /* Stack the elements vertically */
+    justify-content: center;
+    align-items: center;
+    height: 100dvh;  /* Fill the viewport height */
   }
 
   .cover {

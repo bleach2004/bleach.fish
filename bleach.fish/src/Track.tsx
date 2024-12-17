@@ -27,22 +27,22 @@ const Track: React.FC = () => {
       </div>
       <div className='track-info'>
         <br />
-        <p className="arial p text-white">{currentSong.lyrics || '[no lyrics]'}</p>
+        <p className="roboto p text-white">{currentSong.lyrics || '[no lyrics]'}</p>
         <br />
-        <a className="arial p text-white" href={currentSong.spotify} target="_blank" rel="noopener noreferrer">
+        <a className="roboto p text-white" href={currentSong.spotify} target="_blank" rel="noopener noreferrer">
           spotify
         </a>
         <br />
-        <a className="arial p text-white" href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">
+        <a className="roboto p text-white" href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">
           bandcamp
         </a>
         <br />
-        <a className="arial p text-white" href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">
+        <a className="roboto p text-white" href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">
           soundcloud
         </a>
         <br />
         <br />
-        <p className="arial p text-white">{currentSong.releaseDate}</p>
+        <p className="roboto p text-white">{currentSong.releaseDate}</p>
         <br />
       </div>
 
