@@ -182,11 +182,12 @@ a {
   }
 
   .cover {
-    width: 30%;  /* Make the cover image 80% of the width */
+    width: 40%;  /* Make the cover image 80% of the width */
     margin-bottom: 20px;  /* Add space below the image */
   }
 
   .track-title {
+    margin-left: 0;
     text-align: center; /* Center the text on mobile */
   }
   
@@ -202,7 +203,7 @@ a {
 
 @media (max-width: 450px) {
   .cover {
-    width: 70%;  /* Make the cover image 80% of the width */
+    width: 60%;  /* Make the cover image 80% of the width */
     margin-bottom: 20px;  /* Add space below the image */
   }
 }
