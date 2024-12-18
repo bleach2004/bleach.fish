@@ -26,7 +26,7 @@ const BackLink: React.FC = () => {
 
   return (
     <button
-        className='back-button roboto'
+        className='back-button p'
       onClick={handleBackClick}
     >
       back

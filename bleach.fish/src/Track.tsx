@@ -21,28 +21,28 @@ const Track: React.FC = () => {
           alt={currentSong.title}
         />
         <div className="track-title">
-          <p className="roboto h2 text-white">{currentSong.title}</p>
-          <p className="roboto h3 text-yellow-500">{currentSong.artist}</p>
+          <p className="h2">{currentSong.title}</p>
+          <p className="h3">{currentSong.artist}</p>
         </div>
       </div>
       <div className='track-info'>
         <br />
-        <p className="roboto p text-white">{currentSong.lyrics || '[no lyrics]'}</p>
+        <p className="p">{currentSong.lyrics || '[no lyrics]'}</p>
         <br />
-        <a className="roboto p text-white" href={currentSong.spotify} target="_blank" rel="noopener noreferrer">
+        <a className="p" href={currentSong.spotify} target="_blank" rel="noopener noreferrer">
           spotify
         </a>
         <br />
-        <a className="roboto p text-white" href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">
+        <a className="p" href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">
           bandcamp
         </a>
         <br />
-        <a className="roboto p text-white" href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">
+        <a className="p" href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">
           soundcloud
         </a>
         <br />
         <br />
-        <p className="roboto p text-white">{currentSong.releaseDate}</p>
+        <p className="p">{currentSong.releaseDate}</p>
         <br />
       </div>
 

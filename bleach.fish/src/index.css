@@ -1,27 +1,13 @@
 
 * {
-  margin: 0;
-  padding: 0;
   background-color: black;
 }
 
 html, body {
-  height: 100%;  /* Take up full height */
   margin: 2em;
   overflow: hidden;
   background-color: black;
 }
-
-vert-center-wrapper {
-  height: 100%;  /* Take up full height */
-  margin: 0;  /* Remove extra margins */
-  overflow: hidden;  /* Prevent scrolling */
-  background-color: black;
-  display: flex;
-  justify-content: center;  /* Center content horizontally */
-  align-items: center;  /* Center content vertically */
-}
-
 @font-face {
   font-family: 'LoveLetter';
   src: url('/fonts/LoveLetterTW.woff2') format('woff2');
@@ -37,52 +23,36 @@ vert-center-wrapper {
   font-style: normal;
 }
 
-.roboto {
-  font-family: "Roboto", sans-serif;
-  font-weight: 400;
-  font-style: normal;
-}
-
 p, a {
   line-height: 1.3em;
-
   white-space: pre;
-
-}
-
-.text-red {
-  color: pink;
-}
-
-.text-purple {
-  color: purple;
-}
-
-.text-white {
-  color: white;
-}
-
-.typewriter {
-  font-family: "LoveLetter";
 }
 
 .h1 {
   font-size: 2em;
   margin-bottom: 15px;
+  font-family: "LoveLetter";
+  color: white;
 }
 
 .h2 {
   font-size: 2em;
   line-height: 1em;
+  font-family: "LoveLetter";
+  color: white;
 }
 
 .h3 {
   font-size: 1.5em;
   line-height: 1em;
+  font-family: "LoveLetter";
+  color: purple;
 }
 
 .p {
+  font-family: 'Times New Roman', Times, serif;
   font-size: 1.5em;
+  color: 	white;
 }
 
 .postlink {
@@ -121,7 +91,7 @@ a {
 
 .cover {
   outline-style: solid;
-  outline-color: rgb(234 179 8);
+  outline-color: purple;
   ;
   outline-offset: 3px;
   outline-width: 2px;
@@ -130,15 +100,14 @@ a {
 
 .cover-static {
   outline-style: solid;
-  outline-color: rgb(234 179 8);
+  outline-color: purple;
   outline-offset: 3px;
   outline-width: 2px;
-  width: 150px;
-  margin-bottom: 15px;
+  width: 130px;
 }
 
 .cover:hover {
-  outline-color: rgb(202 138 4);
+  outline-color: rgb(102, 1, 102);
   outline-offset: 2px;
   outline-width: 2px;
 }
@@ -151,20 +120,14 @@ a {
   left: 30px;
 }
 
-.chess {
-  margin: 50px;
-  width: 15em;
-  image-rendering: pixelated;
-}
-
 .track-container {
   display: flex;
   align-items: center;
-  flex-direction: row; /* On desktop, keep the items side by side */
+  flex-direction: row;
 }
 
 .track-title {
-  margin-left: 20px; /* Space between cover art and text */
+  margin-left: 20px;
 }
 
 
@@ -172,44 +135,44 @@ a {
   padding: 20px;
 }
 
-/* Responsive Design */
 
 @media (max-width: 668px) {
   .track-container {
-    flex-direction: column; /* Stack elements vertically on mobile */
-    align-items: center; /* Center the items */
+    flex-direction: column;
+    align-items: center;
   }
 
   .skin {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100dvh;  /* Fill the viewport height */
+    height: 100dvh;
   }
 
-  .cover {
-    width: 40%;  /* Make the cover image 80% of the width */
-    margin-bottom: 20px;  /* Add space below the image */
+  .cover-static {
+    width: 40%;
+    margin-bottom: 20px;
   }
+  
 
   .track-title {
     margin-left: 0;
-    text-align: center; /* Center the text on mobile */
+    text-align: center;
   }
   
   .track-info {
     margin-top: 20px;
-    text-align: center; /* Center the text on mobile */
+    text-align: center;
   }
 
   .h2 {
-    font-size: 1.5em; /* Adjust font size for smaller screens */
+    font-size: 1.5em;
   }
 }
 
 @media (max-width: 450px) {
   .cover {
-    width: 60%;  /* Make the cover image 80% of the width */
-    margin-bottom: 20px;  /* Add space below the image */
+    width: 60%;
+    margin-bottom: 20px;
   }
 }
