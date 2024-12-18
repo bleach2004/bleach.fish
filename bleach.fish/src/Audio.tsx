@@ -12,7 +12,7 @@ const Audio: React.FC = () => {
   const songs: Song[] = tracks;
 
   return (
-    <div className='song-grid'>
+    <div className='wrapper'>
       <div
         style={{
           display: 'grid',

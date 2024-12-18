@@ -13,11 +13,11 @@ const Post: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}> {/* Flex container */}
+    <div className='wrapper'>
+      <div>
         <div>
           {currentPost.text && (
-            <p className="roboto p text-white">{currentPost.text}</p>
+            <p className="p">{currentPost.text}</p>
           )}
           {/* Conditionally render the image if imageLink exists */}
           {currentPost.imageLink && (

@@ -13,7 +13,7 @@ const Track: React.FC = () => {
   }
 
   return (
-    <div className='track-wrapper' style={{ padding: '20px' }}>
+    <div className='wrapper track-wrapper'>
       <div className="track-container">
         <img
           className="cover-static"

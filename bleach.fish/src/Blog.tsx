@@ -11,7 +11,7 @@ const Blog: React.FC = () => {
   const posts: Post[] = postsJson;
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className='wrapper'>
       <div>
         {posts.map((post) => (
           <Link
