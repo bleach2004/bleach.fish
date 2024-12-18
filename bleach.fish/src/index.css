@@ -142,6 +142,15 @@ a {
     align-items: center;
   }
 
+
+  .track-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100dvh;
+    flex-direction: column;  /* Stack items vertically */
+
+  }
   .skin {
     display: flex;
     justify-content: center;
@@ -167,6 +176,10 @@ a {
 
   .h2 {
     font-size: 1.5em;
+  }
+
+  .h3 {
+    font-size: 1.4em;
   }
 }
 
