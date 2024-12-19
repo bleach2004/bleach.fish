@@ -17,7 +17,7 @@ const Post: React.FC = () => {
       <div>
         <div>
           {currentPost.text && (
-            <p className="p">{currentPost.text}</p>
+            <p className="blog-text">{currentPost.text}</p>
           )}
           {/* Conditionally render the image if imageLink exists */}
           {currentPost.imageLink && (

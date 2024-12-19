@@ -60,6 +60,12 @@ p, a {
   color: 	white;
 }
 
+.blog-text {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 1.5em;
+  color: 	white;
+}
+
 .postlink {
   line-height: 32px;
   display: block;
@@ -188,6 +194,10 @@ a {
   .track-info {
     margin-top: 20px;
     text-align: center;
+  }
+
+  .blog-text {
+    font-size: 1.1em;
   }
 
   .h2 {
