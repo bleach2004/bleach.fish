@@ -8,6 +8,10 @@
   --secondary-color: rgb(77, 77, 77);
 }
 
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   margin: 2em;
   overflow: hidden;
@@ -30,7 +34,6 @@ body {
 
 p, a {
   line-height: 1.3em;
-  white-space: pre;
 }
 
 .h1 {
@@ -56,7 +59,7 @@ p, a {
 
 .p {
   font-family: 'Times New Roman', Times, serif;
-  font-size: 1.5em;
+
   color: 	white;
 }
 
@@ -194,10 +197,6 @@ a {
   .track-info {
     margin-top: 20px;
     text-align: center;
-  }
-
-  .blog-text {
-    font-size: 1.1em;
   }
 
   .h2 {
