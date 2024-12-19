@@ -33,25 +33,26 @@ body {
 }
 
 p, a {
+  font-size: 16px;
   line-height: 1.3em;
 }
 
 .h1 {
-  font-size: 2em;
+  font-size: 32px;
   margin-bottom: 15px;
   font-family: "LoveLetter";
   color: white;
 }
 
 .h2 {
-  font-size: 2em;
+  font-size: 32px;
   line-height: 1em;
   font-family: "LoveLetter";
   color: white;
 }
 
 .h3 {
-  font-size: 1.5em;
+  font-size: 23px;
   line-height: 1em;
   font-family: "LoveLetter";
   color: var(--primary-color);
@@ -59,13 +60,13 @@ p, a {
 
 .p {
   font-family: 'Times New Roman', Times, serif;
-
+  font-size: 20px;
   color: 	white;
 }
 
 .blog-text {
   font-family: 'Times New Roman', Times, serif;
-  font-size: 1.5em;
+  font-size: 20px;
   color: 	white;
 }
 
@@ -128,7 +129,7 @@ a {
 
 .back-button {
   color: white;
-  font-size: 1.5em;
+  font-size: 20px;
   position: fixed;
   bottom: 20px;
   left: 30px;
