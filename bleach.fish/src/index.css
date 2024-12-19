@@ -3,6 +3,11 @@
   background-color: black;
 }
 
+:root {
+  --primary-color: rgb(172, 172, 172);
+  --secondary-color: rgb(77, 77, 77);
+}
+
 body {
   margin: 2em;
   overflow: hidden;
@@ -46,7 +51,7 @@ p, a {
   font-size: 1.5em;
   line-height: 1em;
   font-family: "LoveLetter";
-  color: purple;
+  color: var(--primary-color);
 }
 
 .p {
@@ -91,25 +96,25 @@ a {
 
 .cover {
   outline-style: solid;
-  outline-color: purple;
+  outline-color: var(--primary-color);
   ;
   outline-offset: 3px;
-  outline-width: 2px;
+  outline-width: 1px;
   width: 150px;
 }
 
 .cover-static {
   outline-style: solid;
-  outline-color: purple;
+  outline-color: var(--primary-color);
   outline-offset: 3px;
   outline-width: 2px;
   width: 130px;
 }
 
 .cover:hover {
-  outline-color: rgb(102, 1, 102);
+  outline-color: var(--secondary-color);
   outline-offset: 2px;
-  outline-width: 2px;
+  outline-width: 1px;
 }
 
 .back-button {
