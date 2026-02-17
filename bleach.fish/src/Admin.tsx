@@ -24,7 +24,6 @@ function Admin() {
   const [authError, setAuthError] = useState<string>('')
   const [isAuthorizing, setIsAuthorizing] = useState<boolean>(false)
 
-  const [title, setTitle] = useState('New page title')
   const [publishDate, setPublishDate] = useState(new Date().toISOString().slice(0, 10))
   const [content, setContent] = useState('Start writing your one-pager content here...')
   const [isSaving, setIsSaving] = useState(false)
@@ -195,14 +194,18 @@ function Admin() {
         body: JSON.stringify({
           path: `src/posts/${postId}.md`,
           content: markdown,
-          message: `Add post ${postId}: ${title}`,
+          message: `Add post ${postId}`,
           id: postId,
           date: publishDate,
-          title,
         }),
       })
 
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(
+            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
+          )
+        }
         const errorText = await response.text()
         throw new Error(errorText || `Commit failed (${response.status})`)
       }
@@ -262,15 +265,6 @@ function Admin() {
           </div>
 
           <form onSubmit={handlePublish} className="space-y-4">
-            <label className="block">
-              <span className="mb-1 block text-sm text-neutral-300">Title</span>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
-              />
-            </label>
-
             <label className="block">
               <span className="mb-1 block text-sm text-neutral-300">Date</span>
               <input

@@ -102,6 +102,13 @@ Expected request payload:
 {
   "path": "src/posts/251015.md",
   "content": "---\nid: \"251015\"\ndate: \"2025-10-15\"\nimage: \"\"\n---\n\npost body\n",
-  "message": "Add post 251015: My title"
+  "message": "Add post 251015"
 }
 ```
+
+
+### Publish returns "Not Found"
+
+A `Not Found` error on publish means your frontend reached the worker origin but there is no `POST /api/cms/commit` route there (or `VITE_CMS_COMMIT_URL` points to the wrong URL).
+
+For Cloudflare, deploy a commit handler route at `/api/cms/commit` on the same worker used for OAuth exchange, or set `VITE_CMS_COMMIT_URL` to the exact commit endpoint URL.
