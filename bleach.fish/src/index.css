@@ -1,8 +1,4 @@
 
-* {
-  background-color: black;
-}
-
 :root {
   --primary-color: rgb(172, 172, 172);
   --secondary-color: rgb(77, 77, 77);
@@ -16,6 +12,12 @@ body {
   margin: 2em;
   overflow: hidden;
   background-color: black;
+  background-image: url('/assets/background.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+  min-height: 100svh;
 }
 @font-face {
   font-family: 'LoveLetter';
