@@ -9,6 +9,15 @@ interface GithubUser {
 
 const SESSION_KEY = 'bleachfish_admin_session'
 
+function formatPostId(dateValue: string) {
+  const [year, month, day] = dateValue.split('-')
+  if (!year || !month || !day) {
+    return ''
+  }
+
+  return `${year.slice(-2)}${month}${day}`
+}
+
 function Admin() {
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<GithubUser | null>(null)
@@ -16,13 +25,33 @@ function Admin() {
   const [isAuthorizing, setIsAuthorizing] = useState<boolean>(false)
 
   const [title, setTitle] = useState('New page title')
-  const [slug, setSlug] = useState('new-page')
+  const [publishDate, setPublishDate] = useState(new Date().toISOString().slice(0, 10))
   const [content, setContent] = useState('Start writing your one-pager content here...')
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
+
+  const postId = useMemo(() => formatPostId(publishDate), [publishDate])
 
   const rawClientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
   const clientId = rawClientId?.trim()
   const rawExchangeUrl = import.meta.env.VITE_GITHUB_OAUTH_EXCHANGE_URL as string | undefined
   const exchangeUrl = rawExchangeUrl?.trim()
+  const rawCommitUrl = import.meta.env.VITE_CMS_COMMIT_URL as string | undefined
+  const commitUrl = useMemo(() => {
+    if (rawCommitUrl?.trim()) {
+      return rawCommitUrl.trim()
+    }
+
+    if (!exchangeUrl) {
+      return undefined
+    }
+
+    try {
+      return new URL('/api/cms/commit', exchangeUrl).toString()
+    } catch {
+      return undefined
+    }
+  }, [exchangeUrl, rawCommitUrl])
   const redirectUri = useMemo(() => `${window.location.origin}/admin`, [])
 
   useEffect(() => {
@@ -142,9 +171,48 @@ function Admin() {
     setUser(null)
   }
 
-  const handlePublish = (event: FormEvent) => {
+  const handlePublish = async (event: FormEvent) => {
     event.preventDefault()
-    alert('Draft saved locally for now. We can connect this to real storage in the next step.')
+    setSaveMessage('')
+
+    if (!commitUrl) {
+      setSaveMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
+      return
+    }
+
+    if (!postId) {
+      setSaveMessage('Invalid post date. Please select a valid date.')
+      return
+    }
+
+    const markdown = `---\nid: "${postId}"\ndate: "${publishDate}"\nimage: ""\n---\n\n${content.trim()}\n`
+
+    setIsSaving(true)
+    try {
+      const response = await fetch(commitUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: `src/posts/${postId}.md`,
+          content: markdown,
+          message: `Add post ${postId}: ${title}`,
+          id: postId,
+          date: publishDate,
+          title,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || `Commit failed (${response.status})`)
+      }
+
+      setSaveMessage(`Published src/posts/${postId}.md to the repo.`)
+    } catch (err) {
+      setSaveMessage((err as Error).message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -177,7 +245,8 @@ function Admin() {
             {isAuthorizing ? 'Authorizing…' : 'Continue with GitHub'}
           </button>
           <p className="mt-4 text-sm text-neutral-400">
-            Required env vars: <code>VITE_GITHUB_CLIENT_ID</code> and <code>VITE_GITHUB_OAUTH_EXCHANGE_URL</code>.
+            Required env vars: <code>VITE_GITHUB_CLIENT_ID</code>, <code>VITE_GITHUB_OAUTH_EXCHANGE_URL</code>, and{' '}
+            <code>VITE_CMS_COMMIT_URL</code> (or a worker <code>/api/cms/commit</code> endpoint).
           </p>
         </section>
       ) : (
@@ -203,13 +272,18 @@ function Admin() {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-sm text-neutral-300">Slug</span>
+              <span className="mb-1 block text-sm text-neutral-300">Date</span>
               <input
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                type="date"
+                value={publishDate}
+                onChange={(e) => setPublishDate(e.target.value)}
                 className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
               />
             </label>
+
+            <p className="text-sm text-neutral-400">
+              File name is automatic: <code>{postId || 'YYMMDD'}.md</code>
+            </p>
 
             <label className="block">
               <span className="mb-1 block text-sm text-neutral-300">Content</span>
@@ -221,9 +295,15 @@ function Admin() {
               />
             </label>
 
-            <button className="rounded bg-emerald-400 px-4 py-2 font-semibold text-black" type="submit">
-              Save draft
+            <button
+              className="rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
+              type="submit"
+              disabled={isSaving}
+            >
+              {isSaving ? 'Publishing…' : 'Publish to repo'}
             </button>
+
+            {saveMessage ? <p className="text-sm text-neutral-300">{saveMessage}</p> : null}
           </form>
         </section>
       )}
