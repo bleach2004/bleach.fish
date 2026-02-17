@@ -13,6 +13,7 @@ type Post = {
   id: string;
   date: string;
   image?: string;
+  audio?: string;
   content: string;
 };
 
@@ -25,9 +26,22 @@ const posts: Post[] = Object.entries(modules).map(([path, raw]) => {
     id: (a.id as string) || fileId,
     date: (a.date as string) || "",
     image: (a.image as string) || "",
+    audio: (a.audio as string) || "",
     content: (body ?? "").trim(),
   };
 });
+
+const resolveMediaSrc = (value: string | undefined, defaultPrefix: string) => {
+  if (!value) {
+    return "";
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:") || value.startsWith("/")) {
+    return value;
+  }
+
+  return `${defaultPrefix}${value}`;
+};
 
 const Post: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,10 +60,14 @@ const Post: React.FC = () => {
 
       {currentPost.image && (
         <img
-          src={"/img/" + currentPost.image}
+          src={resolveMediaSrc(currentPost.image, "/img/")}
           style={{ maxWidth: "100%", height: "auto" }}
           alt=""
         />
+      )}
+
+      {currentPost.audio && (
+        <audio controls src={resolveMediaSrc(currentPost.audio, "/audio/")} style={{ width: "100%", marginTop: "1rem" }} />
       )}
     </div>
   );
