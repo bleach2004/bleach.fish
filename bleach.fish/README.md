@@ -61,29 +61,3 @@ VITE_GITHUB_OAUTH_EXCHANGE_URL=https://your-backend.example.com/api/github/excha
 ```
 
 Why an exchange URL is required: GitHub OAuth code exchange needs a client secret, so the browser app posts `code` + `redirectUri` to your backend endpoint, which then securely calls GitHub's token endpoint and returns `{ "access_token": "..." }`.
-
-### Worker CORS requirement (common OAuth callback issue)
-
-If GitHub login succeeds but `/api/github/exchange` fails in the browser with:
-
-- `CORS header 'Access-Control-Allow-Origin' missing`
-- `CORS request did not succeed`
-
-then your Worker must return CORS headers on both `OPTIONS` and `POST` for the exchange endpoint.
-
-Use your site origin (example: `https://bleach.fish`) and ensure these headers are set:
-
-```txt
-Access-Control-Allow-Origin: https://bleach.fish
-Access-Control-Allow-Methods: POST, OPTIONS
-Access-Control-Allow-Headers: Content-Type
-Vary: Origin
-```
-
-Your Worker should also respond to preflight:
-
-```ts
-if (request.method === 'OPTIONS') {
-  return new Response(null, { status: 204, headers: corsHeaders })
-}
-```
