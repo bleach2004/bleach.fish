@@ -19,8 +19,10 @@ function Admin() {
   const [slug, setSlug] = useState('new-page')
   const [content, setContent] = useState('Start writing your one-pager content here...')
 
-  const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
-  const exchangeUrl = import.meta.env.VITE_GITHUB_OAUTH_EXCHANGE_URL as string | undefined
+  const rawClientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
+  const clientId = rawClientId?.trim()
+  const rawExchangeUrl = import.meta.env.VITE_GITHUB_OAUTH_EXCHANGE_URL as string | undefined
+  const exchangeUrl = rawExchangeUrl?.trim()
   const redirectUri = useMemo(() => `${window.location.origin}/admin`, [])
 
   useEffect(() => {
@@ -72,7 +74,14 @@ function Admin() {
 
         window.history.replaceState({}, '', '/admin')
       } catch (err) {
-        setAuthError((err as Error).message)
+        const message = (err as Error).message
+        if (message.toLowerCase().includes('failed to fetch')) {
+          setAuthError(
+            'Could not reach OAuth exchange endpoint. This is usually a Worker CORS issue: ensure Access-Control-Allow-Origin includes your site origin.',
+          )
+        } else {
+          setAuthError(message)
+        }
       } finally {
         setIsAuthorizing(false)
       }
