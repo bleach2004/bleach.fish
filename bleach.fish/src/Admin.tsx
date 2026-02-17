@@ -200,7 +200,7 @@ function Admin() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          path: `src/posts/${postId}.md`,
+          path: `bleach.fish/src/posts/${postId}.md`,
           content: markdown,
           message: `Add post ${postId}`,
           id: postId,
@@ -218,7 +218,7 @@ function Admin() {
         throw new Error(errorText || `Commit failed (${response.status})`)
       }
 
-      setSaveMessage(`Published src/posts/${postId}.md to the repo.`)
+      setSaveMessage(`Published bleach.fish/src/posts/${postId}.md to the repo.`)
     } catch (err) {
       setSaveMessage((err as Error).message)
     } finally {
