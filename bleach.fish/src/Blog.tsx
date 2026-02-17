@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import React from "react";
 import { Link } from "react-router-dom";
-import matter from "gray-matter";
+import fm from "front-matter";
 
 type PostMeta = {
   id: string;
@@ -14,12 +14,13 @@ const modules = import.meta.glob("./posts/*.md", {
 });
 
 const posts: PostMeta[] = Object.entries(modules).map(([path, raw]) => {
-  const { data } = matter(raw as string);
+  const { attributes } = fm(raw as string);
   const fileId = path.split("/").pop()?.replace(".md", "") ?? "";
+  const a = attributes as any;
 
   return {
-    id: (data.id as string) || fileId,
-    date: (data.date as string) || "",
+    id: (a.id as string) || fileId,
+    date: (a.date as string) || "",
   };
 });
 
@@ -36,7 +37,7 @@ const Blog: React.FC = () => {
             to={`/blog/${post.id}`}
             className="p text-white postlink"
           >
-            {post.date}
+            {post.date || post.id}
           </Link>
         ))}
       </div>

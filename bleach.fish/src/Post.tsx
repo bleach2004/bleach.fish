@@ -1,9 +1,9 @@
+/// <reference types="vite/client" />
 import React from "react";
 import { useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import matter from "gray-matter";
+import fm from "front-matter";
 
-// Import all markdown files
 const modules = import.meta.glob("./posts/*.md", {
   as: "raw",
   eager: true,
@@ -16,16 +16,16 @@ type Post = {
   content: string;
 };
 
-// Parse posts
 const posts: Post[] = Object.entries(modules).map(([path, raw]) => {
-  const { data, content } = matter(raw as string);
+  const { attributes, body } = fm(raw as string);
   const fileId = path.split("/").pop()?.replace(".md", "") ?? "";
+  const a = attributes as any;
 
   return {
-    id: (data.id as string) || fileId,
-    date: (data.date as string) || "",
-    image: (data.image as string) || "",
-    content: content.trim(),
+    id: (a.id as string) || fileId,
+    date: (a.date as string) || "",
+    image: (a.image as string) || "",
+    content: (body ?? "").trim(),
   };
 });
 
