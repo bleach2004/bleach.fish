@@ -48,3 +48,67 @@ export default tseslint.config({
   },
 })
 ```
+
+## Admin login (GitHub OAuth)
+
+`/admin` now includes a GitHub login gate and a one-page CMS editor shell.
+
+Set these env vars in `.env`:
+
+```bash
+VITE_GITHUB_CLIENT_ID=your_github_oauth_app_client_id
+VITE_GITHUB_OAUTH_EXCHANGE_URL=https://your-backend.example.com/api/github/exchange
+```
+
+Why an exchange URL is required: GitHub OAuth code exchange needs a client secret, so the browser app posts `code` + `redirectUri` to your backend endpoint, which then securely calls GitHub's token endpoint and returns `{ "access_token": "..." }`.
+
+### Worker CORS requirement (common OAuth callback issue)
+
+If GitHub login succeeds but `/api/github/exchange` fails in the browser with:
+
+- `CORS header 'Access-Control-Allow-Origin' missing`
+- `CORS request did not succeed`
+
+then your Worker must return CORS headers on both `OPTIONS` and `POST` for the exchange endpoint.
+
+Use your site origin (example: `https://bleach.fish`) and ensure these headers are set:
+
+```txt
+Access-Control-Allow-Origin: https://bleach.fish
+Access-Control-Allow-Methods: POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type
+Vary: Origin
+```
+
+Your Worker should also respond to preflight:
+
+```ts
+if (request.method === 'OPTIONS') {
+  return new Response(null, { status: 204, headers: corsHeaders })
+}
+```
+
+
+### CMS upload endpoint
+
+The admin form now publishes directly to your repo (no draft step).
+
+- Filename is generated from the selected date in `YYMMDD` format to match existing post IDs (example: `2025-10-15` -> `251015.md`).
+- Frontend sends a `POST` to `VITE_CMS_COMMIT_URL` (or falls back to `/api/cms/commit` on the same Worker origin as `VITE_GITHUB_OAUTH_EXCHANGE_URL`).
+
+Expected request payload:
+
+```json
+{
+  "path": "src/posts/251015.md",
+  "content": "---\nid: \"251015\"\ndate: \"2025-10-15\"\nimage: \"\"\n---\n\npost body\n",
+  "message": "Add post 251015"
+}
+```
+
+
+### Publish returns "Not Found"
+
+A `Not Found` error on publish means your frontend reached the worker origin but there is no `POST /api/cms/commit` route there (or `VITE_CMS_COMMIT_URL` points to the wrong URL).
+
+For Cloudflare, deploy a commit handler route at `/api/cms/commit` on the same worker used for OAuth exchange, or set `VITE_CMS_COMMIT_URL` to the exact commit endpoint URL.
