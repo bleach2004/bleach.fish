@@ -184,13 +184,21 @@ function Admin() {
       return
     }
 
+    if (!token) {
+      setSaveMessage('Missing GitHub session token. Please log out and sign in again.')
+      return
+    }
+
     const markdown = `---\nid: "${postId}"\ndate: "${publishDate}"\nimage: ""\n---\n\n${content.trim()}\n`
 
     setIsSaving(true)
     try {
       const response = await fetch(commitUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           path: `src/posts/${postId}.md`,
           content: markdown,
