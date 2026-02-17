@@ -36,6 +36,7 @@ function Admin() {
   const rawExchangeUrl = import.meta.env.VITE_GITHUB_OAUTH_EXCHANGE_URL as string | undefined
   const exchangeUrl = rawExchangeUrl?.trim()
   const rawCommitUrl = import.meta.env.VITE_CMS_COMMIT_URL as string | undefined
+  const rawPostsBasePath = import.meta.env.VITE_CMS_POSTS_BASE_PATH as string | undefined
   const commitUrl = useMemo(() => {
     if (rawCommitUrl?.trim()) {
       return rawCommitUrl.trim()
@@ -51,6 +52,13 @@ function Admin() {
       return undefined
     }
   }, [exchangeUrl, rawCommitUrl])
+  const postBasePaths = useMemo(() => {
+    const options = [rawPostsBasePath?.trim(), 'bleach.fish/src/posts', 'src/posts']
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.replace(/\/+$/, ''))
+
+    return [...new Set(options)]
+  }, [rawPostsBasePath])
   const redirectUri = useMemo(() => `${window.location.origin}/admin`, [])
 
   useEffect(() => {
@@ -193,32 +201,46 @@ function Admin() {
 
     setIsSaving(true)
     try {
-      const response = await fetch(commitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          path: `bleach.fish/src/posts/${postId}.md`,
-          content: markdown,
-          message: `Add post ${postId}`,
-          id: postId,
-          date: publishDate,
-        }),
-      })
+      let publishedPath = ''
+      let lastError = ''
 
-      if (!response.ok) {
+      for (const basePath of postBasePaths) {
+        const path = `${basePath}/${postId}.md`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path,
+            content: markdown,
+            message: `Add post ${postId}`,
+            id: postId,
+            date: publishDate,
+          }),
+        })
+
+        if (response.ok) {
+          publishedPath = path
+          break
+        }
+
         if (response.status === 404) {
           throw new Error(
             'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
           )
         }
+
         const errorText = await response.text()
-        throw new Error(errorText || `Commit failed (${response.status})`)
+        lastError = errorText || `Commit failed (${response.status})`
       }
 
-      setSaveMessage(`Published bleach.fish/src/posts/${postId}.md to the repo.`)
+      if (!publishedPath) {
+        throw new Error(lastError || 'Publish failed for all post path options.')
+      }
+
+      setSaveMessage(`Published ${publishedPath} to the repo.`)
     } catch (err) {
       setSaveMessage((err as Error).message)
     } finally {
@@ -257,7 +279,8 @@ function Admin() {
           </button>
           <p className="mt-4 text-sm text-neutral-400">
             Required env vars: <code>VITE_GITHUB_CLIENT_ID</code>, <code>VITE_GITHUB_OAUTH_EXCHANGE_URL</code>, and{' '}
-            <code>VITE_CMS_COMMIT_URL</code> (or a worker <code>/api/cms/commit</code> endpoint).
+            <code>VITE_CMS_COMMIT_URL</code> (or a worker <code>/api/cms/commit</code> endpoint). Optional:{' '}
+            <code>VITE_CMS_POSTS_BASE_PATH</code> to force a single posts directory.
           </p>
         </section>
       ) : (
