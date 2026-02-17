@@ -5,6 +5,7 @@ import Track from  './Track.tsx'
 import Blog from  './Blog.tsx'
 import Post from  './Post.tsx'
 import BackLink from  './BackLink.tsx'
+import Admin from './Admin.tsx'
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
@@ -21,6 +22,7 @@ function App() {
         <Route path="/audio/:id" element={<Track />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:id" element={<Post />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
       <BackLink />
     </Router>

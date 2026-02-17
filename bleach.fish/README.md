@@ -48,3 +48,16 @@ export default tseslint.config({
   },
 })
 ```
+
+## Admin login (GitHub OAuth)
+
+`/admin` now includes a GitHub login gate and a one-page CMS editor shell.
+
+Set these env vars in `.env`:
+
+```bash
+VITE_GITHUB_CLIENT_ID=your_github_oauth_app_client_id
+VITE_GITHUB_OAUTH_EXCHANGE_URL=https://your-backend.example.com/api/github/exchange
+```
+
+Why an exchange URL is required: GitHub OAuth code exchange needs a client secret, so the browser app posts `code` + `redirectUri` to your backend endpoint, which then securely calls GitHub's token endpoint and returns `{ "access_token": "..." }`.
