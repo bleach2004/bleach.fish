@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
 
 interface GithubUser {
   login: string
@@ -18,6 +18,23 @@ function formatPostId(dateValue: string) {
   return `${year.slice(-2)}${month}${day}`
 }
 
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result === 'string') {
+        resolve(result)
+        return
+      }
+
+      reject(new Error('Unable to read file.'))
+    }
+    reader.onerror = () => reject(new Error('Unable to read file.'))
+    reader.readAsDataURL(file)
+  })
+}
+
 function Admin() {
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<GithubUser | null>(null)
@@ -26,6 +43,8 @@ function Admin() {
 
   const [publishDate, setPublishDate] = useState(new Date().toISOString().slice(0, 10))
   const [content, setContent] = useState('Start writing your one-pager content here...')
+  const [imageValue, setImageValue] = useState('')
+  const [audioValue, setAudioValue] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
 
@@ -178,6 +197,36 @@ function Admin() {
     setUser(null)
   }
 
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file)
+      setImageValue(dataUrl)
+      setSaveMessage(`Attached image: ${file.name}`)
+    } catch (err) {
+      setSaveMessage((err as Error).message)
+    }
+  }
+
+  const handleAudioUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file)
+      setAudioValue(dataUrl)
+      setSaveMessage(`Attached audio: ${file.name}`)
+    } catch (err) {
+      setSaveMessage((err as Error).message)
+    }
+  }
+
   const handlePublish = async (event: FormEvent) => {
     event.preventDefault()
     setSaveMessage('')
@@ -197,7 +246,7 @@ function Admin() {
       return
     }
 
-    const markdown = `---\nid: "${postId}"\ndate: "${publishDate}"\nimage: ""\n---\n\n${content.trim()}\n`
+    const markdown = `---\nid: "${postId}"\ndate: "${publishDate}"\nimage: ${JSON.stringify(imageValue)}\naudio: ${JSON.stringify(audioValue)}\n---\n\n${content.trim()}\n`
 
     setIsSaving(true)
     try {
@@ -318,6 +367,28 @@ function Admin() {
                 rows={12}
                 className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
               />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-sm text-neutral-300">Image upload (optional)</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
+              />
+              {imageValue ? <span className="mt-1 block text-xs text-neutral-400">Image attached.</span> : null}
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-sm text-neutral-300">Audio upload (optional)</span>
+              <input
+                type="file"
+                accept="audio/*"
+                onChange={handleAudioUpload}
+                className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
+              />
+              {audioValue ? <span className="mt-1 block text-xs text-neutral-400">Audio attached.</span> : null}
             </label>
 
             <button
