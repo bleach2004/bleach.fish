@@ -11,7 +11,7 @@ interface GithubUser {
 interface ExistingPost {
   id: string
   date: string
-  path: string
+  fileName: string
   raw: string
 }
 
@@ -62,14 +62,14 @@ function Admin() {
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [activeTab, setActiveTab] = useState<'publish' | 'manage'>('publish')
-  const [editPath, setEditPath] = useState('')
+  const [editFileName, setEditFileName] = useState('')
   const [editContent, setEditContent] = useState('')
   const [manageMessage, setManageMessage] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const postId = useMemo(() => formatPostId(publishDate), [publishDate])
-  const existingPosts = useMemo<ExistingPost[]>(() => {
+  const initialPosts = useMemo<ExistingPost[]>(() => {
     return Object.entries(postModules)
       .map(([path, raw]) => {
         const parsed = fm<{ id?: string; date?: string }>(raw)
@@ -77,12 +77,13 @@ function Admin() {
         return {
           id: parsed.attributes.id || fileId,
           date: parsed.attributes.date || '',
-          path,
+          fileName: `${fileId}.md`,
           raw,
         }
       })
       .sort((a, b) => (a.date < b.date ? 1 : -1))
   }, [])
+  const [existingPosts, setExistingPosts] = useState<ExistingPost[]>(initialPosts)
 
   const rawClientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
   const clientId = rawClientId?.trim()
@@ -333,7 +334,7 @@ function Admin() {
 
   const handleStartEdit = (post: ExistingPost) => {
     setActiveTab('manage')
-    setEditPath(post.path)
+    setEditFileName(post.fileName)
     setEditContent(post.raw)
     setManageMessage('')
   }
@@ -342,7 +343,7 @@ function Admin() {
     event.preventDefault()
     setManageMessage('')
 
-    if (!editPath) {
+    if (!editFileName) {
       setManageMessage('Select a post to edit first.')
       return
     }
@@ -359,30 +360,60 @@ function Admin() {
 
     setIsUpdating(true)
     try {
-      const response = await fetch(commitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          path: editPath,
-          content: editContent,
-          message: `Edit post ${editPath.split('/').pop() ?? editPath}`,
-        }),
-      })
+      let updatedPath = ''
+      let lastError = ''
 
-      if (!response.ok) {
+      for (const basePath of postBasePaths) {
+        const repoPath = `${basePath}/${editFileName}`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path: repoPath,
+            content: editContent,
+            message: `Edit post ${editFileName}`,
+          }),
+        })
+
+        if (response.ok) {
+          updatedPath = repoPath
+          break
+        }
+
         if (response.status === 404) {
           throw new Error(
             'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
           )
         }
         const errorText = await response.text()
-        throw new Error(errorText || `Update failed (${response.status})`)
+        lastError = errorText || `Update failed (${response.status})`
       }
 
-      setManageMessage(`Updated ${editPath} in the repo.`)
+      if (!updatedPath) {
+        throw new Error(lastError || 'Update failed for all post path options.')
+      }
+
+      const parsed = fm<{ id?: string; date?: string }>(editContent)
+      const fallbackId = editFileName.replace('.md', '')
+      setExistingPosts((prev) =>
+        prev
+          .map((post) =>
+            post.fileName === editFileName
+              ? {
+                  ...post,
+                  raw: editContent,
+                  id: parsed.attributes.id || fallbackId,
+                  date: parsed.attributes.date || post.date,
+                }
+              : post,
+          )
+          .sort((a, b) => (a.date < b.date ? 1 : -1)),
+      )
+
+      setManageMessage(`Updated ${updatedPath} in the repo.`)
     } catch (err) {
       setManageMessage((err as Error).message)
     } finally {
@@ -391,7 +422,7 @@ function Admin() {
   }
 
   const handleDeletePost = async (post: ExistingPost) => {
-    if (!window.confirm(`Delete ${post.id}.md?`)) {
+    if (!window.confirm(`Delete ${post.fileName}?`)) {
       return
     }
 
@@ -408,33 +439,47 @@ function Admin() {
     setManageMessage('')
     setIsDeleting(true)
     try {
-      const response = await fetch(commitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          path: post.path,
-          content: '',
-          delete: true,
-          message: `Delete post ${post.id}`,
-        }),
-      })
+      let deletedPath = ''
+      let lastError = ''
 
-      if (!response.ok) {
+      for (const basePath of postBasePaths) {
+        const repoPath = `${basePath}/${post.fileName}`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path: repoPath,
+            content: '',
+            delete: true,
+            message: `Delete post ${post.fileName.replace('.md', '')}`,
+          }),
+        })
+
+        if (response.ok) {
+          deletedPath = repoPath
+          break
+        }
+
         if (response.status === 404) {
           throw new Error(
             'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
           )
         }
         const errorText = await response.text()
-        throw new Error(errorText || `Delete failed (${response.status})`)
+        lastError = errorText || `Delete failed (${response.status})`
       }
 
-      setManageMessage(`Deleted ${post.path} in the repo.`)
-      if (editPath === post.path) {
-        setEditPath('')
+      if (!deletedPath) {
+        throw new Error(lastError || 'Delete failed for all post path options.')
+      }
+
+      setExistingPosts((prev) => prev.filter((item) => item.fileName !== post.fileName))
+      setManageMessage(`Deleted ${deletedPath} in the repo.`)
+      if (editFileName === post.fileName) {
+        setEditFileName('')
         setEditContent('')
       }
     } catch (err) {
@@ -560,9 +605,9 @@ function Admin() {
             <div className="space-y-4">
               <ul className="space-y-2">
                 {existingPosts.map((post) => (
-                  <li key={post.path} className="flex flex-wrap items-center justify-between gap-2 rounded border border-neutral-700 px-3 py-2">
+                  <li key={post.fileName} className="flex flex-wrap items-center justify-between gap-2 rounded border border-neutral-700 px-3 py-2">
                     <div>
-                      <p className="font-mono text-sm">{post.id}.md</p>
+                      <p className="font-mono text-sm">{post.fileName}</p>
                       {post.date ? <p className="text-xs text-neutral-400">{post.date}</p> : null}
                     </div>
                     <div className="flex gap-2">
@@ -587,7 +632,7 @@ function Admin() {
               </ul>
 
               <form onSubmit={handleUpdatePost} className="space-y-3">
-                <p className="text-sm text-neutral-400">{editPath ? `Editing ${editPath}` : 'Select a post to edit.'}</p>
+                <p className="text-sm text-neutral-400">{editFileName ? `Editing ${editFileName}` : 'Select a post to edit.'}</p>
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
@@ -599,7 +644,7 @@ function Admin() {
                 <button
                   className="rounded bg-blue-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
                   type="submit"
-                  disabled={isUpdating || !editPath}
+                  disabled={isUpdating || !editFileName}
                 >
                   {isUpdating ? 'Saving…' : 'Save .md changes'}
                 </button>
