@@ -179,6 +179,24 @@ function Admin() {
           throw new Error('No access token returned by exchange endpoint.')
         }
 
+        if (allowedGitHubUsers.length > 0) {
+          const userResponse = await fetch('https://api.github.com/user', {
+            headers: {
+              Authorization: `Bearer ${data.access_token}`,
+              Accept: 'application/vnd.github+json',
+            },
+          })
+
+          if (!userResponse.ok) {
+            throw new Error('Unable to validate GitHub profile. Please sign in again.')
+          }
+
+          const signedInUser = (await userResponse.json()) as GithubUser
+          if (!allowedGitHubUsers.includes(signedInUser.login.toLowerCase())) {
+            throw new Error('This GitHub account is not allowed for admin access.')
+          }
+        }
+
         localStorage.setItem(SESSION_KEY, data.access_token)
         setToken(data.access_token)
 
@@ -198,7 +216,7 @@ function Admin() {
     }
 
     void initializeAuth()
-  }, [exchangeUrl, redirectUri])
+  }, [allowedGitHubUsers, exchangeUrl, redirectUri])
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -541,25 +559,15 @@ function Admin() {
       {authError ? <p className="mb-6 rounded border border-red-500 px-4 py-3 text-red-300">{authError}</p> : null}
 
       {!user ? (
-        <section className="rounded border border-neutral-700 bg-neutral-900 p-6">
-          <h2 className="mb-2 text-xl font-semibold">Log in with GitHub</h2>
-          <p className="mb-6 text-neutral-300">
-            Use your GitHub account to unlock the one-page CMS editor at <code>/admin</code>.
-          </p>
-          <button
-            onClick={handleLogin}
-            disabled={isAuthorizing}
-            className="rounded bg-white px-4 py-2 font-semibold text-black disabled:opacity-50"
-          >
-            {isAuthorizing ? 'Authorizing…' : 'Continue with GitHub'}
-          </button>
-          <p className="mt-4 text-sm text-neutral-400">
-            Required env vars: <code>VITE_GITHUB_CLIENT_ID</code>, <code>VITE_GITHUB_OAUTH_EXCHANGE_URL</code>, and{' '}
-            <code>VITE_CMS_COMMIT_URL</code> (or a worker <code>/api/cms/commit</code> endpoint). Optional:{' '}
-            <code>VITE_CMS_POSTS_BASE_PATH</code> to force a single posts directory and{' '}
-            <code>VITE_CMS_ALLOWED_GITHUB_USERS</code> to limit frontend access by username.
-          </p>
-        </section>
+        <button
+          type="button"
+          onClick={handleLogin}
+          disabled={isAuthorizing}
+          className="cursor-pointer bg-transparent p-0 text-white underline disabled:opacity-50"
+          style={{ fontFamily: 'Times New Roman, Times, serif' }}
+        >
+          log in
+        </button>
       ) : (
         <section className="space-y-5 rounded border border-neutral-700 bg-neutral-900 p-6">
           <div className="flex items-center gap-3">

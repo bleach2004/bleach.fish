@@ -98,6 +98,8 @@ The admin form now publishes directly to your repo (no draft step).
 - Publish requests include `Authorization: Bearer <github_access_token>` so the Worker can validate the signed-in GitHub user before writing to the repo.
 - Optional frontend gate: set `VITE_CMS_ALLOWED_GITHUB_USERS` to a comma-separated allowlist (for example: `bleach2004,anotheruser`) so unauthorized signed-in users cannot publish from the UI.
 - Important: keep backend enforcement enabled too with Worker env `ALLOWED_GITHUB_USERS`; frontend checks are only UX guardrails.
+- Enforce allowlist at **both** endpoints: `/api/github/exchange` (reject unauthorized users before returning an access token) and `/api/cms/commit` (re-check user identity on each write request).
+- A deploy-ready Worker example with this backend enforcement lives at `bleach.fish/worker/index.js`.
 
 Expected request payload:
 
