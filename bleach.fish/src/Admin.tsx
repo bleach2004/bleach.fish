@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
+import fm from 'front-matter'
 
 interface GithubUser {
   login: string
@@ -6,6 +7,26 @@ interface GithubUser {
   html_url: string
   name?: string
 }
+
+interface ExistingPost {
+  id: string
+  date: string
+  fileName: string
+  raw: string
+}
+
+function parseAllowedUsers(value: string | undefined) {
+  return (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+}
+
+const postModules = import.meta.glob('./posts/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
 
 const SESSION_KEY = 'bleachfish_admin_session'
 
@@ -41,14 +62,35 @@ function Admin() {
   const [authError, setAuthError] = useState<string>('')
   const [isAuthorizing, setIsAuthorizing] = useState<boolean>(false)
 
-  const [publishDate, setPublishDate] = useState(new Date().toISOString().slice(0, 10))
+  const [publishDate] = useState(new Date().toISOString().slice(0, 10))
   const [content, setContent] = useState('Start writing your one-pager content here...')
   const [imageValue, setImageValue] = useState('')
   const [audioValue, setAudioValue] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [activeTab, setActiveTab] = useState<'publish' | 'manage'>('publish')
+  const [editFileName, setEditFileName] = useState('')
+  const [editContent, setEditContent] = useState('')
+  const [manageMessage, setManageMessage] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const postId = useMemo(() => formatPostId(publishDate), [publishDate])
+  const initialPosts = useMemo<ExistingPost[]>(() => {
+    return Object.entries(postModules)
+      .map(([path, raw]) => {
+        const parsed = fm<{ id?: string; date?: string }>(raw)
+        const fileId = path.split('/').pop()?.replace('.md', '') ?? ''
+        return {
+          id: parsed.attributes.id || fileId,
+          date: parsed.attributes.date || '',
+          fileName: `${fileId}.md`,
+          raw,
+        }
+      })
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+  }, [])
+  const [existingPosts, setExistingPosts] = useState<ExistingPost[]>(initialPosts)
 
   const rawClientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
   const clientId = rawClientId?.trim()
@@ -56,6 +98,7 @@ function Admin() {
   const exchangeUrl = rawExchangeUrl?.trim()
   const rawCommitUrl = import.meta.env.VITE_CMS_COMMIT_URL as string | undefined
   const rawPostsBasePath = import.meta.env.VITE_CMS_POSTS_BASE_PATH as string | undefined
+  const rawAllowedUsers = import.meta.env.VITE_CMS_ALLOWED_GITHUB_USERS as string | undefined
   const commitUrl = useMemo(() => {
     if (rawCommitUrl?.trim()) {
       return rawCommitUrl.trim()
@@ -78,6 +121,18 @@ function Admin() {
 
     return [...new Set(options)]
   }, [rawPostsBasePath])
+  const allowedGitHubUsers = useMemo(() => parseAllowedUsers(rawAllowedUsers), [rawAllowedUsers])
+  const isEditorAllowed = useMemo(() => {
+    if (!user) {
+      return false
+    }
+
+    if (allowedGitHubUsers.length === 0) {
+      return true
+    }
+
+    return allowedGitHubUsers.includes(user.login.toLowerCase())
+  }, [allowedGitHubUsers, user])
   const redirectUri = useMemo(() => `${window.location.origin}/admin`, [])
 
   useEffect(() => {
@@ -197,6 +252,24 @@ function Admin() {
     setUser(null)
   }
 
+  const requireAuthorizedEditor = () => {
+    if (!token) {
+      const message = 'Missing GitHub session token. Please log out and sign in again.'
+      setSaveMessage(message)
+      setManageMessage(message)
+      return false
+    }
+
+    if (!isEditorAllowed) {
+      const message = 'This GitHub account is not allowed to publish changes from this CMS.'
+      setSaveMessage(message)
+      setManageMessage(message)
+      return false
+    }
+
+    return true
+  }
+
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) {
@@ -241,8 +314,7 @@ function Admin() {
       return
     }
 
-    if (!token) {
-      setSaveMessage('Missing GitHub session token. Please log out and sign in again.')
+    if (!requireAuthorizedEditor()) {
       return
     }
 
@@ -297,6 +369,161 @@ function Admin() {
     }
   }
 
+  const handleStartEdit = (post: ExistingPost) => {
+    setActiveTab('manage')
+    setEditFileName(post.fileName)
+    setEditContent(post.raw)
+    setManageMessage('')
+  }
+
+  const handleUpdatePost = async (event: FormEvent) => {
+    event.preventDefault()
+    setManageMessage('')
+
+    if (!editFileName) {
+      setManageMessage('Select a post to edit first.')
+      return
+    }
+
+    if (!commitUrl) {
+      setManageMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
+      return
+    }
+
+    if (!requireAuthorizedEditor()) {
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      let updatedPath = ''
+      let lastError = ''
+
+      for (const basePath of postBasePaths) {
+        const repoPath = `${basePath}/${editFileName}`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path: repoPath,
+            content: editContent,
+            message: `Edit post ${editFileName}`,
+          }),
+        })
+
+        if (response.ok) {
+          updatedPath = repoPath
+          break
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
+          )
+        }
+        const errorText = await response.text()
+        lastError = errorText || `Update failed (${response.status})`
+      }
+
+      if (!updatedPath) {
+        throw new Error(lastError || 'Update failed for all post path options.')
+      }
+
+      const parsed = fm<{ id?: string; date?: string }>(editContent)
+      const fallbackId = editFileName.replace('.md', '')
+      setExistingPosts((prev) =>
+        prev
+          .map((post) =>
+            post.fileName === editFileName
+              ? {
+                  ...post,
+                  raw: editContent,
+                  id: parsed.attributes.id || fallbackId,
+                  date: parsed.attributes.date || post.date,
+                }
+              : post,
+          )
+          .sort((a, b) => (a.date < b.date ? 1 : -1)),
+      )
+
+      setManageMessage(`Updated ${updatedPath} in the repo.`)
+    } catch (err) {
+      setManageMessage((err as Error).message)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleDeletePost = async (post: ExistingPost) => {
+    if (!window.confirm(`Delete ${post.fileName}?`)) {
+      return
+    }
+
+    if (!commitUrl) {
+      setManageMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
+      return
+    }
+
+    if (!requireAuthorizedEditor()) {
+      return
+    }
+
+    setManageMessage('')
+    setIsDeleting(true)
+    try {
+      let deletedPath = ''
+      let lastError = ''
+
+      for (const basePath of postBasePaths) {
+        const repoPath = `${basePath}/${post.fileName}`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path: repoPath,
+            content: '',
+            delete: true,
+            message: `Delete post ${post.fileName.replace('.md', '')}`,
+          }),
+        })
+
+        if (response.ok) {
+          deletedPath = repoPath
+          break
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
+          )
+        }
+        const errorText = await response.text()
+        lastError = errorText || `Delete failed (${response.status})`
+      }
+
+      if (!deletedPath) {
+        throw new Error(lastError || 'Delete failed for all post path options.')
+      }
+
+      setExistingPosts((prev) => prev.filter((item) => item.fileName !== post.fileName))
+      setManageMessage(`Deleted ${deletedPath} in the repo.`)
+      if (editFileName === post.fileName) {
+        setEditFileName('')
+        setEditContent('')
+      }
+    } catch (err) {
+      setManageMessage((err as Error).message)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-10 text-white">
       <header className="mb-8 flex items-center justify-between">
@@ -329,7 +556,8 @@ function Admin() {
           <p className="mt-4 text-sm text-neutral-400">
             Required env vars: <code>VITE_GITHUB_CLIENT_ID</code>, <code>VITE_GITHUB_OAUTH_EXCHANGE_URL</code>, and{' '}
             <code>VITE_CMS_COMMIT_URL</code> (or a worker <code>/api/cms/commit</code> endpoint). Optional:{' '}
-            <code>VITE_CMS_POSTS_BASE_PATH</code> to force a single posts directory.
+            <code>VITE_CMS_POSTS_BASE_PATH</code> to force a single posts directory and{' '}
+            <code>VITE_CMS_ALLOWED_GITHUB_USERS</code> to limit frontend access by username.
           </p>
         </section>
       ) : (
@@ -344,63 +572,131 @@ function Admin() {
             </div>
           </div>
 
-          <form onSubmit={handlePublish} className="space-y-4">
-            <label className="block">
-              <span className="mb-1 block text-sm text-neutral-300">Date</span>
-              <input
-                type="date"
-                value={publishDate}
-                onChange={(e) => setPublishDate(e.target.value)}
-                className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
-              />
-            </label>
-
-            <p className="text-sm text-neutral-400">
-              File name is automatic: <code>{postId || 'YYMMDD'}.md</code>
+          {!isEditorAllowed ? (
+            <p className="rounded border border-red-500 px-3 py-2 text-sm text-red-300">
+              This account is signed in but not allowed to publish. Ask the site owner to add your username to{' '}
+              <code>VITE_CMS_ALLOWED_GITHUB_USERS</code> (frontend) and <code>ALLOWED_GITHUB_USERS</code> (Worker).
             </p>
+          ) : null}
 
-            <label className="block">
-              <span className="mb-1 block text-sm text-neutral-300">Content</span>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm text-neutral-300">Image upload (optional)</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
-              />
-              {imageValue ? <span className="mt-1 block text-xs text-neutral-400">Image attached.</span> : null}
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm text-neutral-300">Audio upload (optional)</span>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={handleAudioUpload}
-                className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
-              />
-              {audioValue ? <span className="mt-1 block text-xs text-neutral-400">Audio attached.</span> : null}
-            </label>
-
+          <div className="flex gap-2">
             <button
-              className="rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
-              type="submit"
-              disabled={isSaving}
+              className={`rounded px-3 py-2 text-sm ${activeTab === 'publish' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
+              onClick={() => setActiveTab('publish')}
+              type="button"
             >
-              {isSaving ? 'Publishing…' : 'Publish to repo'}
+              Publish
             </button>
+            <button
+              className={`rounded px-3 py-2 text-sm ${activeTab === 'manage' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
+              onClick={() => setActiveTab('manage')}
+              type="button"
+            >
+              Manage posts
+            </button>
+          </div>
 
-            {saveMessage ? <p className="text-sm text-neutral-300">{saveMessage}</p> : null}
-          </form>
+          {activeTab === 'publish' ? (
+            <form onSubmit={handlePublish} className="space-y-4">
+              <p className="text-sm text-neutral-400">
+                <code>{postId || 'YYMMDD'}.md</code>
+              </p>
+
+              <label className="block">
+                <span className="mb-1 block text-sm text-neutral-300">Content</span>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={12}
+                  className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm text-neutral-300">Image upload (optional)</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
+                />
+                {imageValue ? <span className="mt-1 block text-xs text-neutral-400">Image attached.</span> : null}
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm text-neutral-300">Audio upload (optional)</span>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleAudioUpload}
+                  className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
+                />
+                {audioValue ? <span className="mt-1 block text-xs text-neutral-400">Audio attached.</span> : null}
+              </label>
+
+              <button
+                className="rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
+                type="submit"
+                disabled={isSaving || !isEditorAllowed}
+              >
+                {isSaving ? 'Publishing…' : 'Publish to repo'}
+              </button>
+
+              {saveMessage ? <p className="text-sm text-neutral-300">{saveMessage}</p> : null}
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <ul className="space-y-2">
+                {existingPosts.map((post) => (
+                  <li key={post.fileName} className="flex flex-wrap items-center justify-between gap-2 rounded border border-neutral-700 px-3 py-2">
+                    <div>
+                      <p className="font-mono text-sm">{post.fileName}</p>
+                      {post.date ? <p className="text-xs text-neutral-400">{post.date}</p> : null}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEdit(post)}
+                        className="rounded border border-neutral-600 px-3 py-1 text-sm disabled:opacity-50"
+                        disabled={!isEditorAllowed}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeletePost(post)}
+                        disabled={isDeleting || !isEditorAllowed}
+                        className="rounded border border-red-500 px-3 py-1 text-sm text-red-300 disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <form onSubmit={handleUpdatePost} className="space-y-3">
+                <p className="text-sm text-neutral-400">{editFileName ? `Editing ${editFileName}` : 'Select a post to edit.'}</p>
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={14}
+                  className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm"
+                  placeholder="Choose a post above to edit its raw markdown."
+                />
+
+                <button
+                  className="rounded bg-blue-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
+                  type="submit"
+                  disabled={isUpdating || !editFileName || !isEditorAllowed}
+                >
+                  {isUpdating ? 'Saving…' : 'Save .md changes'}
+                </button>
+
+                {manageMessage ? <p className="text-sm text-neutral-300">{manageMessage}</p> : null}
+              </form>
+            </div>
+          )}
         </section>
       )}
     </main>
