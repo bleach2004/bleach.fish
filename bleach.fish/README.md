@@ -96,6 +96,8 @@ The admin form now publishes directly to your repo (no draft step).
 - Filename is generated from the selected date in `YYMMDD` format to match existing post IDs (example: `2025-10-15` -> `251015.md`).
 - Frontend sends a `POST` to `VITE_CMS_COMMIT_URL` (or falls back to `/api/cms/commit` on the same Worker origin as `VITE_GITHUB_OAUTH_EXCHANGE_URL`).
 - Publish requests include `Authorization: Bearer <github_access_token>` so the Worker can validate the signed-in GitHub user before writing to the repo.
+- Optional frontend gate: set `VITE_CMS_ALLOWED_GITHUB_USERS` to a comma-separated allowlist (for example: `bleach2004,anotheruser`) so unauthorized signed-in users cannot publish from the UI.
+- Important: keep backend enforcement enabled too with Worker env `ALLOWED_GITHUB_USERS`; frontend checks are only UX guardrails.
 
 Expected request payload:
 
