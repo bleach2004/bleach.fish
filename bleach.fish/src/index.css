@@ -2,6 +2,8 @@
 :root {
   --primary-color: rgb(172, 172, 172);
   --secondary-color: rgb(77, 77, 77);
+  --desktop-left-width: min(44vw, 72vh);
+  --desktop-left-content-gap: 24px;
 }
 
 html, body {
@@ -25,7 +27,7 @@ body {
     background-image: url('/mobile.png');
     background-position: center top;
     background-repeat: no-repeat;
-    background-size: 100% auto;
+    background-size: auto 100%;
     background-attachment: fixed;
   }
 }
@@ -146,7 +148,7 @@ a {
   font-size: 20px;
   position: fixed;
   bottom: 20px;
-  left: 30px;
+  left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
 }
 
 .track-container {
@@ -161,7 +163,7 @@ a {
 
 
 .wrapper {
-  left: 40px;
+  left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
   top: 40px;
   position: fixed;
 }
