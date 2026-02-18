@@ -15,6 +15,13 @@ interface ExistingPost {
   raw: string
 }
 
+function parseAllowedUsers(value: string | undefined) {
+  return (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+}
+
 const postModules = import.meta.glob('./posts/*.md', {
   query: '?raw',
   import: 'default',
@@ -91,6 +98,7 @@ function Admin() {
   const exchangeUrl = rawExchangeUrl?.trim()
   const rawCommitUrl = import.meta.env.VITE_CMS_COMMIT_URL as string | undefined
   const rawPostsBasePath = import.meta.env.VITE_CMS_POSTS_BASE_PATH as string | undefined
+  const rawAllowedUsers = import.meta.env.VITE_CMS_ALLOWED_GITHUB_USERS as string | undefined
   const commitUrl = useMemo(() => {
     if (rawCommitUrl?.trim()) {
       return rawCommitUrl.trim()
@@ -113,6 +121,18 @@ function Admin() {
 
     return [...new Set(options)]
   }, [rawPostsBasePath])
+  const allowedGitHubUsers = useMemo(() => parseAllowedUsers(rawAllowedUsers), [rawAllowedUsers])
+  const isEditorAllowed = useMemo(() => {
+    if (!user) {
+      return false
+    }
+
+    if (allowedGitHubUsers.length === 0) {
+      return true
+    }
+
+    return allowedGitHubUsers.includes(user.login.toLowerCase())
+  }, [allowedGitHubUsers, user])
   const redirectUri = useMemo(() => `${window.location.origin}/admin`, [])
 
   useEffect(() => {
@@ -159,6 +179,24 @@ function Admin() {
           throw new Error('No access token returned by exchange endpoint.')
         }
 
+        if (allowedGitHubUsers.length > 0) {
+          const userResponse = await fetch('https://api.github.com/user', {
+            headers: {
+              Authorization: `Bearer ${data.access_token}`,
+              Accept: 'application/vnd.github+json',
+            },
+          })
+
+          if (!userResponse.ok) {
+            throw new Error('Unable to validate GitHub profile. Please sign in again.')
+          }
+
+          const signedInUser = (await userResponse.json()) as GithubUser
+          if (!allowedGitHubUsers.includes(signedInUser.login.toLowerCase())) {
+            throw new Error('This GitHub account is not allowed for admin access.')
+          }
+        }
+
         localStorage.setItem(SESSION_KEY, data.access_token)
         setToken(data.access_token)
 
@@ -178,7 +216,7 @@ function Admin() {
     }
 
     void initializeAuth()
-  }, [exchangeUrl, redirectUri])
+  }, [allowedGitHubUsers, exchangeUrl, redirectUri])
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -232,6 +270,24 @@ function Admin() {
     setUser(null)
   }
 
+  const requireAuthorizedEditor = () => {
+    if (!token) {
+      const message = 'Missing GitHub session token. Please log out and sign in again.'
+      setSaveMessage(message)
+      setManageMessage(message)
+      return false
+    }
+
+    if (!isEditorAllowed) {
+      const message = 'This GitHub account is not allowed to publish changes from this CMS.'
+      setSaveMessage(message)
+      setManageMessage(message)
+      return false
+    }
+
+    return true
+  }
+
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) {
@@ -276,8 +332,7 @@ function Admin() {
       return
     }
 
-    if (!token) {
-      setSaveMessage('Missing GitHub session token. Please log out and sign in again.')
+    if (!requireAuthorizedEditor()) {
       return
     }
 
@@ -353,8 +408,7 @@ function Admin() {
       return
     }
 
-    if (!token) {
-      setManageMessage('Missing GitHub session token. Please log out and sign in again.')
+    if (!requireAuthorizedEditor()) {
       return
     }
 
@@ -431,8 +485,7 @@ function Admin() {
       return
     }
 
-    if (!token) {
-      setManageMessage('Missing GitHub session token. Please log out and sign in again.')
+    if (!requireAuthorizedEditor()) {
       return
     }
 
@@ -506,24 +559,15 @@ function Admin() {
       {authError ? <p className="mb-6 rounded border border-red-500 px-4 py-3 text-red-300">{authError}</p> : null}
 
       {!user ? (
-        <section className="rounded border border-neutral-700 bg-neutral-900 p-6">
-          <h2 className="mb-2 text-xl font-semibold">Log in with GitHub</h2>
-          <p className="mb-6 text-neutral-300">
-            Use your GitHub account to unlock the one-page CMS editor at <code>/admin</code>.
-          </p>
-          <button
-            onClick={handleLogin}
-            disabled={isAuthorizing}
-            className="rounded bg-white px-4 py-2 font-semibold text-black disabled:opacity-50"
-          >
-            {isAuthorizing ? 'Authorizing…' : 'Continue with GitHub'}
-          </button>
-          <p className="mt-4 text-sm text-neutral-400">
-            Required env vars: <code>VITE_GITHUB_CLIENT_ID</code>, <code>VITE_GITHUB_OAUTH_EXCHANGE_URL</code>, and{' '}
-            <code>VITE_CMS_COMMIT_URL</code> (or a worker <code>/api/cms/commit</code> endpoint). Optional:{' '}
-            <code>VITE_CMS_POSTS_BASE_PATH</code> to force a single posts directory.
-          </p>
-        </section>
+        <button
+          type="button"
+          onClick={handleLogin}
+          disabled={isAuthorizing}
+          className="cursor-pointer bg-transparent p-0 text-white underline disabled:opacity-50"
+          style={{ fontFamily: 'Times New Roman, Times, serif' }}
+        >
+          log in
+        </button>
       ) : (
         <section className="space-y-5 rounded border border-neutral-700 bg-neutral-900 p-6">
           <div className="flex items-center gap-3">
@@ -535,6 +579,13 @@ function Admin() {
               </a>
             </div>
           </div>
+
+          {!isEditorAllowed ? (
+            <p className="rounded border border-red-500 px-3 py-2 text-sm text-red-300">
+              This account is signed in but not allowed to publish. Ask the site owner to add your username to{' '}
+              <code>VITE_CMS_ALLOWED_GITHUB_USERS</code> (frontend) and <code>ALLOWED_GITHUB_USERS</code> (Worker).
+            </p>
+          ) : null}
 
           <div className="flex gap-2">
             <button
@@ -594,7 +645,7 @@ function Admin() {
               <button
                 className="rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
                 type="submit"
-                disabled={isSaving}
+                disabled={isSaving || !isEditorAllowed}
               >
                 {isSaving ? 'Publishing…' : 'Publish to repo'}
               </button>
@@ -614,14 +665,15 @@ function Admin() {
                       <button
                         type="button"
                         onClick={() => handleStartEdit(post)}
-                        className="rounded border border-neutral-600 px-3 py-1 text-sm"
+                        className="rounded border border-neutral-600 px-3 py-1 text-sm disabled:opacity-50"
+                        disabled={!isEditorAllowed}
                       >
                         Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => void handleDeletePost(post)}
-                        disabled={isDeleting}
+                        disabled={isDeleting || !isEditorAllowed}
                         className="rounded border border-red-500 px-3 py-1 text-sm text-red-300 disabled:opacity-50"
                       >
                         Delete
@@ -644,7 +696,7 @@ function Admin() {
                 <button
                   className="rounded bg-blue-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
                   type="submit"
-                  disabled={isUpdating || !editFileName}
+                  disabled={isUpdating || !editFileName || !isEditorAllowed}
                 >
                   {isUpdating ? 'Saving…' : 'Save .md changes'}
                 </button>
