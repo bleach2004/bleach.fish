@@ -3,7 +3,7 @@
   --primary-color: rgb(172, 172, 172);
   --secondary-color: rgb(77, 77, 77);
   --desktop-left-width: min(44vw, 72vh);
-  --desktop-left-content-gap: 24px;
+  --desktop-left-content-gap: clamp(24px, 3vw, 48px);
 }
 
 html, body {
@@ -19,7 +19,7 @@ body {
   background-repeat: no-repeat, no-repeat;
   background-size: auto 100%, auto 100%;
   background-attachment: fixed, fixed;
-  min-height: 100svh;
+  min-height: 100dvh;
 }
 
 @media (max-width: 668px) {
@@ -27,8 +27,9 @@ body {
     background-image: url('/mobile.png');
     background-position: center top;
     background-repeat: no-repeat;
-    background-size: auto 100%;
-    background-attachment: fixed;
+    background-size: cover;
+    background-attachment: scroll;
+    min-height: 100dvh;
   }
 }
 
@@ -115,9 +116,10 @@ a {
 
 .skin {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
-  height: 100vh;
+  height: 100dvh;
+  padding-left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
 }
 
 .cover {
@@ -197,7 +199,8 @@ a {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100svh;
+    height: 100dvh;
+    padding-left: 0;
   }
 
   .cover-static {
