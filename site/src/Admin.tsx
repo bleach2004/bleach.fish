@@ -139,8 +139,12 @@ function Admin() {
     const preferredPath = 'src/posts'
     const configuredPath = rawPostsBasePath?.trim().replace(/\/+$/, '')
 
-    if (configuredPath && configuredPath === preferredPath) {
-      return [preferredPath]
+    if (configuredPath) {
+      if (configuredPath === preferredPath) {
+        return [preferredPath]
+      }
+
+      return [configuredPath, preferredPath]
     }
 
     return [preferredPath]
