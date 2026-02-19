@@ -39,6 +39,27 @@ function formatPostId(dateValue: string) {
   return `${year.slice(-2)}${month}${day}`
 }
 
+function getPostIdForDate(dateValue: string, posts: ExistingPost[]) {
+  const baseId = formatPostId(dateValue)
+  if (!baseId) {
+    return ''
+  }
+
+  const sameDayCount = posts.reduce((count, post) => {
+    if (post.date !== dateValue) {
+      return count
+    }
+
+    return post.id.startsWith(baseId) ? count + 1 : count
+  }, 0)
+
+  if (sameDayCount === 0) {
+    return baseId
+  }
+
+  return `${baseId}[${sameDayCount + 1}]`
+}
+
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
@@ -75,7 +96,6 @@ function Admin() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const postId = useMemo(() => formatPostId(publishDate), [publishDate])
   const initialPosts = useMemo<ExistingPost[]>(() => {
     return Object.entries(postModules)
       .map(([path, raw]) => {
@@ -91,6 +111,7 @@ function Admin() {
       .sort((a, b) => (a.date < b.date ? 1 : -1))
   }, [])
   const [existingPosts, setExistingPosts] = useState<ExistingPost[]>(initialPosts)
+  const postId = useMemo(() => getPostIdForDate(publishDate, existingPosts), [existingPosts, publishDate])
 
   const rawClientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
   const clientId = rawClientId?.trim()
@@ -381,6 +402,18 @@ function Admin() {
       if (!publishedPath) {
         throw new Error(lastError || 'Publish failed for all post path options.')
       }
+
+      setExistingPosts((prev) =>
+        [
+          {
+            id: postId,
+            date: publishDate,
+            fileName: `${postId}.md`,
+            raw: markdown,
+          },
+          ...prev,
+        ].sort((a, b) => (a.date < b.date ? 1 : -1)),
+      )
 
       setSaveMessage(`Published ${publishedPath} to the repo.`)
     } catch (err) {
