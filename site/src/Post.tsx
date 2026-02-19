@@ -51,7 +51,7 @@ const Post: React.FC = () => {
   if (!currentPost) return <h1>Post not found</h1>;
 
   return (
-    <div className="wrapper">
+    <div className="wrapper post-wrapper">
       {currentPost.content && (
         <div className="blog-text">
           <ReactMarkdown>{currentPost.content}</ReactMarkdown>
@@ -60,14 +60,14 @@ const Post: React.FC = () => {
 
       {currentPost.image && (
         <img
+          className="post-image"
           src={resolveMediaSrc(currentPost.image, "/img/")}
-          style={{ maxWidth: "100%", height: "auto" }}
           alt=""
         />
       )}
 
       {currentPost.audio && (
-        <audio controls src={resolveMediaSrc(currentPost.audio, "/audio/")} style={{ width: "100%", marginTop: "1rem" }} />
+        <audio className="post-audio" controls src={resolveMediaSrc(currentPost.audio, "/audio/")} />
       )}
     </div>
   );
