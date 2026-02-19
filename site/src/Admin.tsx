@@ -39,6 +39,54 @@ function formatPostId(dateValue: string) {
   return `${year.slice(-2)}${month}${day}`
 }
 
+function getPostIdForDate(dateValue: string, posts: ExistingPost[]) {
+  const baseId = formatPostId(dateValue)
+  if (!baseId) {
+    return ''
+  }
+
+  const sameDayCount = posts.reduce((count, post) => {
+    if (post.date !== dateValue) {
+      return count
+    }
+
+    return post.id.startsWith(baseId) ? count + 1 : count
+  }, 0)
+
+  if (sameDayCount === 0) {
+    return baseId
+  }
+
+  return `${baseId}[${sameDayCount + 1}]`
+}
+
+
+function getPostSequence(postId: string, dateValue: string) {
+  const baseId = formatPostId(dateValue)
+  if (!baseId || !postId.startsWith(baseId)) {
+    return 0
+  }
+
+  const match = postId.match(/\[(\d+)\]$/)
+  if (!match) {
+    return 1
+  }
+
+  const sequence = Number.parseInt(match[1], 10)
+  return Number.isNaN(sequence) ? 1 : sequence
+}
+
+function comparePostsByDateAndSequence(a: ExistingPost, b: ExistingPost) {
+  if (a.date !== b.date) {
+    return a.date < b.date ? 1 : -1
+  }
+
+  const aSequence = getPostSequence(a.id, a.date)
+  const bSequence = getPostSequence(b.id, b.date)
+
+  return bSequence - aSequence
+}
+
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
@@ -75,7 +123,6 @@ function Admin() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const postId = useMemo(() => formatPostId(publishDate), [publishDate])
   const initialPosts = useMemo<ExistingPost[]>(() => {
     return Object.entries(postModules)
       .map(([path, raw]) => {
@@ -88,9 +135,10 @@ function Admin() {
           raw,
         }
       })
-      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .sort(comparePostsByDateAndSequence)
   }, [])
   const [existingPosts, setExistingPosts] = useState<ExistingPost[]>(initialPosts)
+  const postId = useMemo(() => getPostIdForDate(publishDate, existingPosts), [existingPosts, publishDate])
 
   const rawClientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
   const clientId = rawClientId?.trim()
@@ -382,6 +430,18 @@ function Admin() {
         throw new Error(lastError || 'Publish failed for all post path options.')
       }
 
+      setExistingPosts((prev) =>
+        [
+          {
+            id: postId,
+            date: publishDate,
+            fileName: `${postId}.md`,
+            raw: markdown,
+          },
+          ...prev,
+        ].sort(comparePostsByDateAndSequence),
+      )
+
       setSaveMessage(`Published ${publishedPath} to the repo.`)
     } catch (err) {
       setSaveMessage((err as Error).message)
@@ -467,7 +527,7 @@ function Admin() {
                 }
               : post,
           )
-          .sort((a, b) => (a.date < b.date ? 1 : -1)),
+          .sort(comparePostsByDateAndSequence),
       )
 
       setManageMessage(`Updated ${updatedPath} in the repo.`)
