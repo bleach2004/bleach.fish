@@ -163,14 +163,18 @@ function Admin() {
     }
   }, [exchangeUrl, rawCommitUrl])
   const postBasePaths = useMemo(() => {
-    const preferredPath = 'src/posts'
+    const preferredPath = 'site/src/posts'
     const configuredPath = rawPostsBasePath?.trim().replace(/\/+$/, '')
 
-    if (configuredPath && configuredPath === preferredPath) {
-      return [preferredPath]
+    if (configuredPath) {
+      if (configuredPath === preferredPath) {
+        return [preferredPath, 'src/posts']
+      }
+
+      return [configuredPath, preferredPath, 'src/posts']
     }
 
-    return [preferredPath]
+    return [preferredPath, 'src/posts']
   }, [rawPostsBasePath])
   const allowedGitHubUsers = useMemo(() => parseAllowedUsers(rawAllowedUsers), [rawAllowedUsers])
   const isEditorAllowed = useMemo(() => {
