@@ -86,14 +86,14 @@ p, a {
   color: 	white;
 }
 
-.blog-text {
+.diary-text {
   font-family: 'Times New Roman', Times, serif;
   font-size: var(--times-text-size);
   color: 	white;
   white-space: pre-wrap;
 }
 
-.blog-text :where(p, li, a, blockquote) {
+.diary-text :where(p, li, a, blockquote) {
   font-size: var(--times-text-size);
 }
 
