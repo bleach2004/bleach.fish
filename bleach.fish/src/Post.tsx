@@ -67,7 +67,7 @@ const Post: React.FC = () => {
       )}
 
       {currentPost.audio && (
-        <audio controls src={resolveMediaSrc(currentPost.audio, "/audio/")} style={{ width: "100%", marginTop: "1rem" }} />
+        <audio className="post-audio" controls src={resolveMediaSrc(currentPost.audio, "/audio/")} />
       )}
     </div>
   );

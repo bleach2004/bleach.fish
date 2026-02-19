@@ -6,6 +6,8 @@
   --center-lane-gap: clamp(24px, 4vw, 56px);
   --content-lane-width: min(620px, calc(100vw - (2 * (var(--side-image-width) + var(--center-lane-gap))) - 4rem));
   --media-width: clamp(130px, 32vw, 220px);
+  --post-media-width: clamp(200px, 42vw, 320px);
+  --times-text-size: 20px;
   --desktop-left-width: var(--side-image-width);
   --desktop-left-content-gap: var(--center-lane-gap);
 }
@@ -80,15 +82,19 @@ p, a {
 
 .p {
   font-family: 'Times New Roman', Times, serif;
-  font-size: 20px;
+  font-size: var(--times-text-size);
   color: 	white;
 }
 
 .blog-text {
   font-family: 'Times New Roman', Times, serif;
-  font-size: 20px;
+  font-size: var(--times-text-size);
   color: 	white;
   white-space: pre-wrap;
+}
+
+.blog-text :where(p, li, a, blockquote) {
+  font-size: var(--times-text-size);
 }
 
 .postlink {
@@ -120,10 +126,10 @@ a {
 
 .skin {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
   height: 100dvh;
-  padding-left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
+  padding-left: 0;
 }
 
 .cover {
@@ -182,10 +188,17 @@ a {
 
 .post-image {
   display: block;
-  width: var(--media-width);
+  width: var(--post-media-width);
   max-width: 100%;
   height: auto;
-  margin: 1rem auto 0;
+  margin: 1rem 0 0;
+}
+
+.post-audio {
+  display: block;
+  width: var(--post-media-width);
+  max-width: 100%;
+  margin-top: 1rem;
 }
 
 @media (max-width: 668px) {
