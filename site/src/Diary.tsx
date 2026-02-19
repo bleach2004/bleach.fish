@@ -27,14 +27,14 @@ const posts: PostMeta[] = Object.entries(modules).map(([path, raw]) => {
 // Sort newest-first (best if date is ISO: YYYY-MM-DD)
 posts.sort((a, b) => (a.date < b.date ? 1 : -1));
 
-const Blog: React.FC = () => {
+const Diary: React.FC = () => {
   return (
     <div className="wrapper">
       <div>
         {posts.map((post) => (
           <Link
             key={post.id}
-            to={`/blog/${post.id}`}
+            to={`/diary/${post.id}`}
             className="p text-white postlink"
           >
             {post.date || post.id}
@@ -45,4 +45,4 @@ const Blog: React.FC = () => {
   );
 };
 
-export default Blog;
+export default Diary;

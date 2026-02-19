@@ -53,7 +53,7 @@ const Post: React.FC = () => {
   return (
     <div className="wrapper post-wrapper">
       {currentPost.content && (
-        <div className="blog-text">
+        <div className="diary-text">
           <ReactMarkdown>{currentPost.content}</ReactMarkdown>
         </div>
       )}

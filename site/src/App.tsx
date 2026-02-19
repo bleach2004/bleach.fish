@@ -2,7 +2,7 @@ import './App.css'
 import Home from  './Home.tsx'
 import Audio from  './Audio.tsx'
 import Track from  './Track.tsx'
-import Blog from  './Blog.tsx'
+import Diary from  './Diary.tsx'
 import Post from  './Post.tsx'
 import BackLink from  './BackLink.tsx'
 import Admin from './Admin.tsx'
@@ -20,8 +20,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/audio" element={<Audio />} />
         <Route path="/audio/:id" element={<Track />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/blog/:id" element={<Post />} />
+        <Route path="/diary" element={<Diary />} />
+        <Route path="/diary/:id" element={<Post />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
       <BackLink />

@@ -7,7 +7,7 @@ const Home: React.FC = () => {
       <div className="meat text-center">
         <p className='h1'>bleach's corner</p>
         <Link to="/audio" className='p text-white'>audio</Link>
-        <Link to="/blog" className='p  text-white'>blog</Link>
+        <Link to="/diary" className='p  text-white'>diary</Link>
       </div>
     </div>
   );
