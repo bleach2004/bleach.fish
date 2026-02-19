@@ -115,11 +115,14 @@ function Admin() {
     }
   }, [exchangeUrl, rawCommitUrl])
   const postBasePaths = useMemo(() => {
-    const options = [rawPostsBasePath?.trim(), 'bleach.fish/src/posts', 'src/posts']
-      .filter((value): value is string => Boolean(value))
-      .map((value) => value.replace(/\/+$/, ''))
+    const preferredPath = 'src/posts'
+    const configuredPath = rawPostsBasePath?.trim().replace(/\/+$/, '')
 
-    return [...new Set(options)]
+    if (configuredPath && configuredPath === preferredPath) {
+      return [preferredPath]
+    }
+
+    return [preferredPath]
   }, [rawPostsBasePath])
   const allowedGitHubUsers = useMemo(() => parseAllowedUsers(rawAllowedUsers), [rawAllowedUsers])
   const isEditorAllowed = useMemo(() => {
