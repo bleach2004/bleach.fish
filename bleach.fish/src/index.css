@@ -181,8 +181,8 @@ a {
 }
 
 .post-wrapper {
-  left: 50%;
-  transform: translateX(-50%);
+  left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
+  transform: none;
   width: min(var(--content-lane-width), calc(100vw - 2rem));
 }
 
