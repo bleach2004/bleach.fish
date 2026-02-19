@@ -2,8 +2,12 @@
 :root {
   --primary-color: rgb(172, 172, 172);
   --secondary-color: rgb(77, 77, 77);
-  --desktop-left-width: min(44vw, 72vh);
-  --desktop-left-content-gap: clamp(24px, 3vw, 48px);
+  --side-image-width: clamp(180px, 24vw, 320px);
+  --center-lane-gap: clamp(24px, 4vw, 56px);
+  --content-lane-width: min(620px, calc(100vw - (2 * (var(--side-image-width) + var(--center-lane-gap))) - 4rem));
+  --media-width: clamp(130px, 32vw, 220px);
+  --desktop-left-width: var(--side-image-width);
+  --desktop-left-content-gap: var(--center-lane-gap);
 }
 
 html, body {
@@ -17,7 +21,7 @@ body {
   background-image: url('/desktop-left.png'), url('/desktop-right.png');
   background-position: left top, right top;
   background-repeat: no-repeat, no-repeat;
-  background-size: auto 100%, auto 100%;
+  background-size: var(--side-image-width) 100%, var(--side-image-width) 100%;
   background-attachment: fixed, fixed;
   min-height: 100dvh;
 }
@@ -170,11 +174,31 @@ a {
   position: fixed;
 }
 
+.post-wrapper {
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--content-lane-width), calc(100vw - 2rem));
+}
+
+.post-image {
+  display: block;
+  width: var(--media-width);
+  max-width: 100%;
+  height: auto;
+  margin: 1rem auto 0;
+}
+
 @media (max-width: 668px) {
 
   .wrapper {
     padding: 25px;
     position: static;
+  }
+
+  .post-wrapper {
+    left: auto;
+    transform: none;
+    width: auto;
   }
 
   .back-button {
