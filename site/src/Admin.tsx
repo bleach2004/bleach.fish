@@ -60,6 +60,33 @@ function getPostIdForDate(dateValue: string, posts: ExistingPost[]) {
   return `${baseId}[${sameDayCount + 1}]`
 }
 
+
+function getPostSequence(postId: string, dateValue: string) {
+  const baseId = formatPostId(dateValue)
+  if (!baseId || !postId.startsWith(baseId)) {
+    return 0
+  }
+
+  const match = postId.match(/\[(\d+)\]$/)
+  if (!match) {
+    return 1
+  }
+
+  const sequence = Number.parseInt(match[1], 10)
+  return Number.isNaN(sequence) ? 1 : sequence
+}
+
+function comparePostsByDateAndSequence(a: ExistingPost, b: ExistingPost) {
+  if (a.date !== b.date) {
+    return a.date < b.date ? 1 : -1
+  }
+
+  const aSequence = getPostSequence(a.id, a.date)
+  const bSequence = getPostSequence(b.id, b.date)
+
+  return bSequence - aSequence
+}
+
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
@@ -108,7 +135,7 @@ function Admin() {
           raw,
         }
       })
-      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .sort(comparePostsByDateAndSequence)
   }, [])
   const [existingPosts, setExistingPosts] = useState<ExistingPost[]>(initialPosts)
   const postId = useMemo(() => getPostIdForDate(publishDate, existingPosts), [existingPosts, publishDate])
@@ -416,7 +443,7 @@ function Admin() {
             raw: markdown,
           },
           ...prev,
-        ].sort((a, b) => (a.date < b.date ? 1 : -1)),
+        ].sort(comparePostsByDateAndSequence),
       )
 
       setSaveMessage(`Published ${publishedPath} to the repo.`)
@@ -504,7 +531,7 @@ function Admin() {
                 }
               : post,
           )
-          .sort((a, b) => (a.date < b.date ? 1 : -1)),
+          .sort(comparePostsByDateAndSequence),
       )
 
       setManageMessage(`Updated ${updatedPath} in the repo.`)
