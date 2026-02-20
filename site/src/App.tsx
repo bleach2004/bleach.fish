@@ -6,6 +6,7 @@ import Diary from  './Diary.tsx'
 import Post from  './Post.tsx'
 import BackLink from  './BackLink.tsx'
 import Admin from './Admin.tsx'
+import Scenery from './Scenery.tsx'
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
@@ -22,6 +23,7 @@ function App() {
         <Route path="/audio/:id" element={<Track />} />
         <Route path="/diary" element={<Diary />} />
         <Route path="/diary/:id" element={<Post />} />
+        <Route path="/scenery" element={<Scenery />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
       <BackLink />

@@ -201,6 +201,17 @@ a {
   margin-top: 1rem;
 }
 
+.scenery-wrapper {
+  min-height: calc(100dvh - 4rem);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.scenery-image {
+  margin: 0;
+}
+
 @media (max-width: 668px) {
   :root {
     --times-text-size: 18px;
