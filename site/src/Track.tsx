@@ -3,10 +3,10 @@ import ReactMarkdown from 'react-markdown'
 import { useParams } from 'react-router-dom'
 import { findSongById } from './music/tracks'
 
-const externalLink = (value: string) =>
+const externalLink = (value: string, label: string) =>
   value ? (
     <a className="p" href={value} target="_blank" rel="noopener noreferrer">
-      {value.replace(/^https?:\/\//, '')}
+      {label}
     </a>
   ) : null
 
@@ -40,9 +40,9 @@ const Track: React.FC = () => {
         ) : (
           <p className="p">[no lyrics]</p>
         )}
-        {currentSong.spotify ? <>{externalLink(currentSong.spotify)}<br /></> : null}
-        {currentSong.bandcamp ? <>{externalLink(currentSong.bandcamp)}<br /></> : null}
-        {currentSong.soundcloud ? <>{externalLink(currentSong.soundcloud)}<br /></> : null}
+        {currentSong.spotify ? <>{externalLink(currentSong.spotify, 'spotify')}<br /></> : null}
+        {currentSong.bandcamp ? <>{externalLink(currentSong.bandcamp, 'bandcamp')}<br /></> : null}
+        {currentSong.soundcloud ? <>{externalLink(currentSong.soundcloud, 'soundcloud')}<br /></> : null}
         <br />
         <p className="p">{currentSong.releaseDate}</p>
         <br />

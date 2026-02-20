@@ -14,7 +14,7 @@
  * - ALLOWED_GITHUB_USERS         (CSV allowlist; defaults to bleach2004)
  * - ALLOWED_POSTS_BASE_PATH      (defaults to site/src/posts)
  * - ALLOWED_SONGS_BASE_PATH      (defaults to site/src/music)
- * - ALLOWED_ART_BASE_PATH        (defaults to site/public/art)
+ * - ALLOWED_ART_BASE_PATH        (CSV allowed; defaults to site/public/art,public/art)
  * - MAX_CONTENT_BYTES            (defaults to 200000)
  */
 
@@ -22,6 +22,7 @@ const DEFAULT_ALLOWED_USER = 'bleach2004'
 const DEFAULT_POSTS_BASE_PATH = 'site/src/posts'
 const DEFAULT_SONGS_BASE_PATH = 'site/src/music'
 const DEFAULT_ART_BASE_PATH = 'site/public/art'
+const DEFAULT_ART_BASE_PATHS = [DEFAULT_ART_BASE_PATH, 'public/art']
 const DEFAULT_MAX_CONTENT_BYTES = 200000
 
 function corsHeaders(origin) {
@@ -81,46 +82,31 @@ function normalizePath(path) {
   return trimmed
 }
 
-function normalizeBasePath(path) {
-  if (typeof path !== 'string') return null
-  const normalized = path.trim().replace(/^\/+/, '').replace(/\/+$/, '')
-  return normalized || null
-}
-
-function buildAllowedBasePaths(configuredPath, fallbackPaths = []) {
-  const values = []
-  const configured = normalizeBasePath(configuredPath)
-  if (configured) {
-    values.push(configured)
-  }
-
-  for (const fallback of fallbackPaths) {
-    const normalized = normalizeBasePath(fallback)
-    if (normalized) {
-      values.push(normalized)
-    }
-  }
-
-  return Array.from(new Set(values))
-}
-
 function isAllowedMarkdownPath(path, allowedBasePath) {
-  const normalizedBase = normalizeBasePath(allowedBasePath)
-  if (!normalizedBase) {
-    return false
-  }
+  const normalizedBase = allowedBasePath.replace(/^\/+/, '').replace(/\/+$/, '')
   return path.startsWith(`${normalizedBase}/`) && path.endsWith('.md')
 }
 
-function isAllowedArtPath(path, allowedBasePath) {
-  const normalizedBase = normalizeBasePath(allowedBasePath)
-  if (!normalizedBase) {
-    return false
-  }
-  return (
-    path.startsWith(`${normalizedBase}/`) &&
-    /\.(png|jpe?g|webp|gif|avif)$/i.test(path)
-  )
+function isAllowedArtPath(path, allowedBasePaths) {
+  const normalizedBases = allowedBasePaths
+    .map((base) => base.replace(/^\/+/, '').replace(/\/+$/, ''))
+    .filter(Boolean)
+
+  return normalizedBases.some((normalizedBase) => {
+    return path.startsWith(`${normalizedBase}/`) && /\.(png|jpe?g|webp|gif|avif)$/i.test(path)
+  })
+}
+
+function normalizeBasePaths(envValue, fallbackPaths) {
+  const fromEnv = (envValue || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  const fallbacks = Array.isArray(fallbackPaths) ? fallbackPaths : [fallbackPaths]
+  const combined = fromEnv.length > 0 ? [...fromEnv, ...fallbacks] : fallbacks
+
+  return Array.from(new Set(combined))
 }
 
 async function getUserFromAccessToken(accessToken) {
@@ -224,33 +210,21 @@ export default {
           return json({ error: 'Invalid path' }, 400, c)
         }
 
-        const allowedPostsBasePaths = buildAllowedBasePaths(env.ALLOWED_POSTS_BASE_PATH, [
-          DEFAULT_POSTS_BASE_PATH,
-          'src/posts',
-        ])
-        const allowedSongsBasePaths = buildAllowedBasePaths(env.ALLOWED_SONGS_BASE_PATH, [
-          DEFAULT_SONGS_BASE_PATH,
-          'src/music',
-        ])
-        const allowedArtBasePaths = buildAllowedBasePaths(env.ALLOWED_ART_BASE_PATH, [
-          DEFAULT_ART_BASE_PATH,
-          'public/art',
-        ])
+        const allowedPostsBasePath = (env.ALLOWED_POSTS_BASE_PATH || DEFAULT_POSTS_BASE_PATH).trim()
+        const allowedSongsBasePath = (env.ALLOWED_SONGS_BASE_PATH || DEFAULT_SONGS_BASE_PATH).trim()
+        const allowedArtBasePaths = normalizeBasePaths(env.ALLOWED_ART_BASE_PATH, DEFAULT_ART_BASE_PATHS)
 
         const pathAllowed =
-          allowedPostsBasePaths.some((basePath) => isAllowedMarkdownPath(normalizedPath, basePath)) ||
-          allowedSongsBasePaths.some((basePath) => isAllowedMarkdownPath(normalizedPath, basePath)) ||
-          allowedArtBasePaths.some((basePath) => isAllowedArtPath(normalizedPath, basePath))
+          isAllowedMarkdownPath(normalizedPath, allowedPostsBasePath) ||
+          isAllowedMarkdownPath(normalizedPath, allowedSongsBasePath) ||
+          isAllowedArtPath(normalizedPath, allowedArtBasePaths)
 
         if (!pathAllowed) {
-          const postsList = allowedPostsBasePaths.map((path) => `${path}/*.md`).join(', ')
-          const songsList = allowedSongsBasePaths.map((path) => `${path}/*.md`).join(', ')
-          const artList = allowedArtBasePaths
-            .map((path) => `${path}/*.{png,jpg,jpeg,webp,gif,avif}`)
-            .join(', ')
           return json(
             {
-              error: `Path not allowed. Only ${postsList}, ${songsList}, or ${artList} is permitted.`,
+              error: `Path not allowed. Only ${allowedPostsBasePath}/*.md, ${allowedSongsBasePath}/*.md, or ${allowedArtBasePaths.join(
+                ', ',
+              )}/*.{png,jpg,jpeg,webp,gif,avif} is permitted.`,
             },
             403,
             c,
