@@ -22,21 +22,57 @@ const modules = import.meta.glob('./*.md', {
 
 const normalizeString = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 
-export const songs: Song[] = Object.entries(modules).map(([path, raw]) => {
-  const { attributes, body } = fm<SongAttributes>(raw as string)
-  const fileId = path.split('/').pop()?.replace('.md', '') ?? ''
-
-  return {
-    id: normalizeString(attributes.id) || fileId,
-    title: normalizeString(attributes.title),
-    artist: normalizeString(attributes.artist),
-    coverArt: normalizeString(attributes.coverArt),
-    releaseDate: normalizeString(attributes.releaseDate),
-    spotify: normalizeString(attributes.spotify),
-    bandcamp: normalizeString(attributes.bandcamp),
-    soundcloud: normalizeString(attributes.soundcloud),
-    lyrics: normalizeString(attributes.lyrics) || body.trim(),
+const parseReleaseDate = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return 0
   }
-})
+
+  const native = Date.parse(trimmed)
+  if (!Number.isNaN(native)) {
+    return native
+  }
+
+  const match = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/)
+  if (!match) {
+    return 0
+  }
+
+  const month = Number.parseInt(match[1], 10)
+  const day = Number.parseInt(match[2], 10)
+  const yearRaw = Number.parseInt(match[3], 10)
+  const year = yearRaw < 100 ? 2000 + yearRaw : yearRaw
+  const parsed = Date.UTC(year, month - 1, day)
+
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
+export const songs: Song[] = Object.entries(modules)
+  .map(([path, raw]) => {
+    const { attributes, body } = fm<SongAttributes>(raw as string)
+    const fileId = path.split('/').pop()?.replace('.md', '') ?? ''
+
+    return {
+      id: normalizeString(attributes.id) || fileId,
+      title: normalizeString(attributes.title),
+      artist: normalizeString(attributes.artist),
+      coverArt: normalizeString(attributes.coverArt),
+      releaseDate: normalizeString(attributes.releaseDate),
+      spotify: normalizeString(attributes.spotify),
+      bandcamp: normalizeString(attributes.bandcamp),
+      soundcloud: normalizeString(attributes.soundcloud),
+      lyrics: normalizeString(attributes.lyrics) || body.trim(),
+    }
+  })
+  .sort((a, b) => {
+    const aDate = parseReleaseDate(a.releaseDate)
+    const bDate = parseReleaseDate(b.releaseDate)
+
+    if (aDate !== bDate) {
+      return bDate - aDate
+    }
+
+    return a.id.localeCompare(b.id)
+  })
 
 export const findSongById = (id: string | undefined) => songs.find((song) => song.id === id)
