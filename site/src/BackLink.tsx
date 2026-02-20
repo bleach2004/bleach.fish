@@ -7,7 +7,7 @@ const BackLink: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    setShowBackLink(location.pathname !== '/');
+    setShowBackLink(location.pathname !== '/' && location.pathname !== '/scenery');
   }, [location.pathname]);
 
   const handleBackClick = () => {
