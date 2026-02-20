@@ -147,6 +147,20 @@ function fileToDataUrl(file: File) {
   })
 }
 
+function dataUrlToBase64(dataUrl: string) {
+  const match = dataUrl.match(/^data:[^;]+;base64,(.+)$/)
+  if (!match) {
+    throw new Error('Invalid file encoding.')
+  }
+
+  return match[1]
+}
+
+function getFileExtension(name: string) {
+  const match = name.toLowerCase().match(/(\.[a-z0-9]+)$/)
+  return match ? match[1] : ''
+}
+
 function Admin() {
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<GithubUser | null>(null)
@@ -168,7 +182,8 @@ function Admin() {
   const [songIdValue, setSongIdValue] = useState('')
   const [songTitleValue, setSongTitleValue] = useState('')
   const [songArtistValue, setSongArtistValue] = useState('')
-  const [songCoverArtValue, setSongCoverArtValue] = useState('')
+  const [songCoverArtDataUrl, setSongCoverArtDataUrl] = useState('')
+  const [songCoverArtFileName, setSongCoverArtFileName] = useState('')
   const [songReleaseDateValue, setSongReleaseDateValue] = useState('')
   const [songSpotifyValue, setSongSpotifyValue] = useState('')
   const [songBandcampValue, setSongBandcampValue] = useState('')
@@ -216,6 +231,7 @@ function Admin() {
   const rawCommitUrl = import.meta.env.VITE_CMS_COMMIT_URL as string | undefined
   const rawPostsBasePath = import.meta.env.VITE_CMS_POSTS_BASE_PATH as string | undefined
   const rawSongsBasePath = import.meta.env.VITE_CMS_SONGS_BASE_PATH as string | undefined
+  const rawArtBasePath = import.meta.env.VITE_CMS_ART_BASE_PATH as string | undefined
   const rawAllowedUsers = import.meta.env.VITE_CMS_ALLOWED_GITHUB_USERS as string | undefined
   const commitUrl = useMemo(() => {
     if (rawCommitUrl?.trim()) {
@@ -260,6 +276,20 @@ function Admin() {
 
     return [preferredPath, 'src/music']
   }, [rawSongsBasePath])
+  const artBasePaths = useMemo(() => {
+    const preferredPath = 'site/public/art'
+    const configuredPath = rawArtBasePath?.trim().replace(/\/+$/, '')
+
+    if (configuredPath) {
+      if (configuredPath === preferredPath) {
+        return [preferredPath, 'public/art']
+      }
+
+      return [configuredPath, preferredPath, 'public/art']
+    }
+
+    return [preferredPath, 'public/art']
+  }, [rawArtBasePath])
   const allowedGitHubUsers = useMemo(() => parseAllowedUsers(rawAllowedUsers), [rawAllowedUsers])
   const isEditorAllowed = useMemo(() => {
     if (!user) {
@@ -697,11 +727,28 @@ function Admin() {
     }
   }
 
+  const handleSongCoverArtUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file)
+      setSongCoverArtDataUrl(dataUrl)
+      setSongCoverArtFileName(file.name)
+      setSongSaveMessage(`Attached cover art: ${file.name}`)
+    } catch (err) {
+      setSongSaveMessage((err as Error).message)
+    }
+  }
+
   const resetSongDraft = () => {
     setSongIdValue('')
     setSongTitleValue('')
     setSongArtistValue('')
-    setSongCoverArtValue('')
+    setSongCoverArtDataUrl('')
+    setSongCoverArtFileName('')
     setSongReleaseDateValue('')
     setSongSpotifyValue('')
     setSongBandcampValue('')
@@ -739,10 +786,61 @@ function Admin() {
       return
     }
 
-    const markdown = `---\nid: "${generatedId}"\ntitle: ${JSON.stringify(songTitleValue.trim())}\nartist: ${JSON.stringify(songArtistValue.trim())}\ncoverArt: ${JSON.stringify(songCoverArtValue.trim())}\nreleaseDate: ${JSON.stringify(songReleaseDateValue.trim())}\nspotify: ${JSON.stringify(songSpotifyValue.trim())}\nbandcamp: ${JSON.stringify(songBandcampValue.trim())}\nsoundcloud: ${JSON.stringify(songSoundcloudValue.trim())}\n---\n\n${songLyricsValue.trim()}\n`
+    if (!songCoverArtDataUrl || !songCoverArtFileName) {
+      setSongSaveMessage('Cover art upload is required.')
+      return
+    }
 
     setIsSongSaving(true)
     try {
+      let resolvedCoverArt = ''
+
+      const extension = getFileExtension(songCoverArtFileName) || '.jpg'
+      const artFileName = `${generatedId}${extension}`
+      const artPublicUrl = `/art/${artFileName}`
+      const contentBase64 = dataUrlToBase64(songCoverArtDataUrl)
+      let uploadedPath = ''
+      let uploadError = ''
+
+      for (const basePath of artBasePaths) {
+        const path = `${basePath}/${artFileName}`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path,
+            contentBase64,
+            message: `Add cover art ${artFileName}`,
+            id: generatedId,
+          }),
+        })
+
+        if (response.ok) {
+          uploadedPath = path
+          break
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
+          )
+        }
+
+        const errorText = await response.text()
+        uploadError = errorText || `Cover art upload failed (${response.status})`
+      }
+
+      if (!uploadedPath) {
+        throw new Error(uploadError || 'Cover art upload failed for all art path options.')
+      }
+
+      resolvedCoverArt = artPublicUrl
+
+      const markdown = `---\nid: "${generatedId}"\ntitle: ${JSON.stringify(songTitleValue.trim())}\nartist: ${JSON.stringify(songArtistValue.trim())}\ncoverArt: ${JSON.stringify(resolvedCoverArt)}\nreleaseDate: ${JSON.stringify(songReleaseDateValue.trim())}\nspotify: ${JSON.stringify(songSpotifyValue.trim())}\nbandcamp: ${JSON.stringify(songBandcampValue.trim())}\nsoundcloud: ${JSON.stringify(songSoundcloudValue.trim())}\n---\n\n${songLyricsValue.trim()}\n`
+
       let publishedPath = ''
       let lastError = ''
 
@@ -1139,13 +1237,19 @@ function Admin() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-sm text-neutral-300">Cover art URL/path</span>
+                  <span className="mb-1 block text-sm text-neutral-300">Cover art upload</span>
                   <input
-                    value={songCoverArtValue}
-                    onChange={(e) => setSongCoverArtValue(e.target.value)}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSongCoverArtUpload}
                     className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
-                    placeholder="/art/cover.jpg"
                   />
+                  {songCoverArtFileName ? (
+                    <span className="mt-1 block text-xs text-neutral-400">
+                      Will publish to /art/{generatedSongId || '[song-id]'}
+                      {getFileExtension(songCoverArtFileName) || '.jpg'}
+                    </span>
+                  ) : null}
                 </label>
 
                 <label className="block">

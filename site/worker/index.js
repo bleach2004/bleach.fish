@@ -12,12 +12,16 @@
  *
  * Optional env vars:
  * - ALLOWED_GITHUB_USERS         (CSV allowlist; defaults to bleach2004)
- * - ALLOWED_POSTS_BASE_PATH      (defaults to src/posts)
+ * - ALLOWED_POSTS_BASE_PATH      (defaults to site/src/posts)
+ * - ALLOWED_SONGS_BASE_PATH      (defaults to site/src/music)
+ * - ALLOWED_ART_BASE_PATH        (defaults to site/public/art)
  * - MAX_CONTENT_BYTES            (defaults to 200000)
  */
 
 const DEFAULT_ALLOWED_USER = 'bleach2004'
-const DEFAULT_POSTS_BASE_PATH = 'src/posts'
+const DEFAULT_POSTS_BASE_PATH = 'site/src/posts'
+const DEFAULT_SONGS_BASE_PATH = 'site/src/music'
+const DEFAULT_ART_BASE_PATH = 'site/public/art'
 const DEFAULT_MAX_CONTENT_BYTES = 200000
 
 function corsHeaders(origin) {
@@ -77,9 +81,17 @@ function normalizePath(path) {
   return trimmed
 }
 
-function isAllowedPostPath(path, allowedBasePath) {
+function isAllowedMarkdownPath(path, allowedBasePath) {
   const normalizedBase = allowedBasePath.replace(/^\/+/, '').replace(/\/+$/, '')
   return path.startsWith(`${normalizedBase}/`) && path.endsWith('.md')
+}
+
+function isAllowedArtPath(path, allowedBasePath) {
+  const normalizedBase = allowedBasePath.replace(/^\/+/, '').replace(/\/+$/, '')
+  return (
+    path.startsWith(`${normalizedBase}/`) &&
+    /\.(png|jpe?g|webp|gif|avif)$/i.test(path)
+  )
 }
 
 async function getUserFromAccessToken(accessToken) {
@@ -175,6 +187,7 @@ export default {
         const normalizedPath = normalizePath(body?.path)
         const isDelete = body?.delete === true || body?.delete === 'true'
         const content = body?.content
+        const contentBase64 = body?.contentBase64
         const rawMessage = typeof body?.message === 'string' ? body.message : isDelete ? 'Delete post' : 'Add post'
         const message = rawMessage.trim().slice(0, 120)
 
@@ -182,18 +195,44 @@ export default {
           return json({ error: 'Invalid path' }, 400, c)
         }
 
-        const allowedBasePath = (env.ALLOWED_POSTS_BASE_PATH || DEFAULT_POSTS_BASE_PATH).trim()
-        if (!isAllowedPostPath(normalizedPath, allowedBasePath)) {
-          return json({ error: `Path not allowed. Only ${allowedBasePath}/*.md is permitted.` }, 403, c)
+        const allowedPostsBasePath = (env.ALLOWED_POSTS_BASE_PATH || DEFAULT_POSTS_BASE_PATH).trim()
+        const allowedSongsBasePath = (env.ALLOWED_SONGS_BASE_PATH || DEFAULT_SONGS_BASE_PATH).trim()
+        const allowedArtBasePath = (env.ALLOWED_ART_BASE_PATH || DEFAULT_ART_BASE_PATH).trim()
+
+        const pathAllowed =
+          isAllowedMarkdownPath(normalizedPath, allowedPostsBasePath) ||
+          isAllowedMarkdownPath(normalizedPath, allowedSongsBasePath) ||
+          isAllowedArtPath(normalizedPath, allowedArtBasePath)
+
+        if (!pathAllowed) {
+          return json(
+            {
+              error: `Path not allowed. Only ${allowedPostsBasePath}/*.md, ${allowedSongsBasePath}/*.md, or ${allowedArtBasePath}/*.{png,jpg,jpeg,webp,gif,avif} is permitted.`,
+            },
+            403,
+            c,
+          )
         }
 
-        if (!isDelete && typeof content !== 'string') {
-          return json({ error: 'Missing content' }, 400, c)
+        if (!isDelete && typeof content !== 'string' && typeof contentBase64 !== 'string') {
+          return json({ error: 'Missing content or contentBase64' }, 400, c)
         }
 
         if (!isDelete) {
           const maxBytes = Number(env.MAX_CONTENT_BYTES || DEFAULT_MAX_CONTENT_BYTES)
-          const contentBytes = new TextEncoder().encode(content).length
+          let contentBytes = 0
+
+          if (typeof contentBase64 === 'string') {
+            const compactBase64 = contentBase64.replace(/\s+/g, '')
+            try {
+              contentBytes = atob(compactBase64).length
+            } catch {
+              return json({ error: 'Invalid contentBase64' }, 400, c)
+            }
+          } else {
+            contentBytes = new TextEncoder().encode(content).length
+          }
+
           if (contentBytes > maxBytes) {
             return json({ error: `Content too large (>${maxBytes} bytes)` }, 413, c)
           }
@@ -266,9 +305,10 @@ export default {
         }
 
         const putUrl = contentApiWriteUrl(owner, repo, normalizedPath)
+        const encodedContent = typeof contentBase64 === 'string' ? contentBase64.replace(/\s+/g, '') : toBase64(content)
         const putBody = {
           message,
-          content: toBase64(content),
+          content: encodedContent,
           branch,
           ...(existingSha ? { sha: existingSha } : {}),
         }
