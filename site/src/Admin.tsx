@@ -15,6 +15,14 @@ interface ExistingPost {
   raw: string
 }
 
+interface ExistingSong {
+  id: string
+  title: string
+  artist: string
+  fileName: string
+  raw: string
+}
+
 function parseAllowedUsers(value: string | undefined) {
   return (value ?? '')
     .split(',')
@@ -23,6 +31,12 @@ function parseAllowedUsers(value: string | undefined) {
 }
 
 const postModules = import.meta.glob('./posts/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
+
+const songModules = import.meta.glob('./music/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -87,6 +101,35 @@ function comparePostsByDateAndSequence(a: ExistingPost, b: ExistingPost) {
   return bSequence - aSequence
 }
 
+function compareSongsById(a: ExistingSong, b: ExistingSong) {
+  if (a.id === b.id) {
+    return 0
+  }
+
+  return a.id < b.id ? 1 : -1
+}
+
+function toSongId(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function parseSongFromRaw(fileName: string, raw: string): ExistingSong {
+  const parsed = fm<{ id?: string; title?: string; artist?: string }>(raw)
+  const fallbackId = fileName.replace('.md', '')
+
+  return {
+    id: parsed.attributes.id || fallbackId,
+    title: parsed.attributes.title || '',
+    artist: parsed.attributes.artist || '',
+    fileName,
+    raw,
+  }
+}
+
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
@@ -116,12 +159,28 @@ function Admin() {
   const [audioValue, setAudioValue] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
-  const [activeTab, setActiveTab] = useState<'publish' | 'manage'>('publish')
+  const [activeTab, setActiveTab] = useState<'publish' | 'manage' | 'songs'>('publish')
   const [editFileName, setEditFileName] = useState('')
   const [editContent, setEditContent] = useState('')
   const [manageMessage, setManageMessage] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [songIdValue, setSongIdValue] = useState('')
+  const [songTitleValue, setSongTitleValue] = useState('')
+  const [songArtistValue, setSongArtistValue] = useState('')
+  const [songCoverArtValue, setSongCoverArtValue] = useState('')
+  const [songReleaseDateValue, setSongReleaseDateValue] = useState('')
+  const [songSpotifyValue, setSongSpotifyValue] = useState('')
+  const [songBandcampValue, setSongBandcampValue] = useState('')
+  const [songSoundcloudValue, setSongSoundcloudValue] = useState('')
+  const [songLyricsValue, setSongLyricsValue] = useState('')
+  const [songSaveMessage, setSongSaveMessage] = useState('')
+  const [isSongSaving, setIsSongSaving] = useState(false)
+  const [songEditFileName, setSongEditFileName] = useState('')
+  const [songEditContent, setSongEditContent] = useState('')
+  const [songManageMessage, setSongManageMessage] = useState('')
+  const [isSongUpdating, setIsSongUpdating] = useState(false)
+  const [isSongDeleting, setIsSongDeleting] = useState(false)
 
   const initialPosts = useMemo<ExistingPost[]>(() => {
     return Object.entries(postModules)
@@ -139,6 +198,16 @@ function Admin() {
   }, [])
   const [existingPosts, setExistingPosts] = useState<ExistingPost[]>(initialPosts)
   const postId = useMemo(() => getPostIdForDate(publishDate, existingPosts), [existingPosts, publishDate])
+  const initialSongs = useMemo<ExistingSong[]>(() => {
+    return Object.entries(songModules)
+      .map(([path, raw]) => {
+        const fileId = path.split('/').pop()?.replace('.md', '') ?? ''
+        return parseSongFromRaw(`${fileId}.md`, raw)
+      })
+      .sort(compareSongsById)
+  }, [])
+  const [existingSongs, setExistingSongs] = useState<ExistingSong[]>(initialSongs)
+  const generatedSongId = useMemo(() => toSongId(songIdValue || songTitleValue), [songIdValue, songTitleValue])
 
   const rawClientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
   const clientId = rawClientId?.trim()
@@ -146,6 +215,7 @@ function Admin() {
   const exchangeUrl = rawExchangeUrl?.trim()
   const rawCommitUrl = import.meta.env.VITE_CMS_COMMIT_URL as string | undefined
   const rawPostsBasePath = import.meta.env.VITE_CMS_POSTS_BASE_PATH as string | undefined
+  const rawSongsBasePath = import.meta.env.VITE_CMS_SONGS_BASE_PATH as string | undefined
   const rawAllowedUsers = import.meta.env.VITE_CMS_ALLOWED_GITHUB_USERS as string | undefined
   const commitUrl = useMemo(() => {
     if (rawCommitUrl?.trim()) {
@@ -176,6 +246,20 @@ function Admin() {
 
     return [preferredPath, 'src/posts']
   }, [rawPostsBasePath])
+  const songBasePaths = useMemo(() => {
+    const preferredPath = 'site/src/music'
+    const configuredPath = rawSongsBasePath?.trim().replace(/\/+$/, '')
+
+    if (configuredPath) {
+      if (configuredPath === preferredPath) {
+        return [preferredPath, 'src/music']
+      }
+
+      return [configuredPath, preferredPath, 'src/music']
+    }
+
+    return [preferredPath, 'src/music']
+  }, [rawSongsBasePath])
   const allowedGitHubUsers = useMemo(() => parseAllowedUsers(rawAllowedUsers), [rawAllowedUsers])
   const isEditorAllowed = useMemo(() => {
     if (!user) {
@@ -330,6 +414,8 @@ function Admin() {
       const message = 'Missing GitHub session token. Please log out and sign in again.'
       setSaveMessage(message)
       setManageMessage(message)
+      setSongSaveMessage(message)
+      setSongManageMessage(message)
       return false
     }
 
@@ -337,6 +423,8 @@ function Admin() {
       const message = 'This GitHub account is not allowed to publish changes from this CMS.'
       setSaveMessage(message)
       setManageMessage(message)
+      setSongSaveMessage(message)
+      setSongManageMessage(message)
       return false
     }
 
@@ -609,6 +697,240 @@ function Admin() {
     }
   }
 
+  const resetSongDraft = () => {
+    setSongIdValue('')
+    setSongTitleValue('')
+    setSongArtistValue('')
+    setSongCoverArtValue('')
+    setSongReleaseDateValue('')
+    setSongSpotifyValue('')
+    setSongBandcampValue('')
+    setSongSoundcloudValue('')
+    setSongLyricsValue('')
+  }
+
+  const handleStartSongEdit = (song: ExistingSong) => {
+    setSongEditFileName(song.fileName)
+    setSongEditContent(song.raw)
+    setSongManageMessage('')
+  }
+
+  const handlePublishSong = async (event: FormEvent) => {
+    event.preventDefault()
+    setSongSaveMessage('')
+
+    if (!commitUrl) {
+      setSongSaveMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
+      return
+    }
+
+    if (!requireAuthorizedEditor()) {
+      return
+    }
+
+    const generatedId = toSongId(songIdValue || songTitleValue)
+    if (!generatedId) {
+      setSongSaveMessage('Song ID or title is required.')
+      return
+    }
+
+    if (existingSongs.some((song) => song.id === generatedId)) {
+      setSongSaveMessage(`A song with id "${generatedId}" already exists.`)
+      return
+    }
+
+    const markdown = `---\nid: "${generatedId}"\ntitle: ${JSON.stringify(songTitleValue.trim())}\nartist: ${JSON.stringify(songArtistValue.trim())}\ncoverArt: ${JSON.stringify(songCoverArtValue.trim())}\nreleaseDate: ${JSON.stringify(songReleaseDateValue.trim())}\nspotify: ${JSON.stringify(songSpotifyValue.trim())}\nbandcamp: ${JSON.stringify(songBandcampValue.trim())}\nsoundcloud: ${JSON.stringify(songSoundcloudValue.trim())}\n---\n\n${songLyricsValue.trim()}\n`
+
+    setIsSongSaving(true)
+    try {
+      let publishedPath = ''
+      let lastError = ''
+
+      for (const basePath of songBasePaths) {
+        const path = `${basePath}/${generatedId}.md`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path,
+            content: markdown,
+            message: `Add song ${generatedId}`,
+            id: generatedId,
+          }),
+        })
+
+        if (response.ok) {
+          publishedPath = path
+          break
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
+          )
+        }
+
+        const errorText = await response.text()
+        lastError = errorText || `Commit failed (${response.status})`
+      }
+
+      if (!publishedPath) {
+        throw new Error(lastError || 'Publish failed for all song path options.')
+      }
+
+      setExistingSongs((prev) =>
+        [...prev, parseSongFromRaw(`${generatedId}.md`, markdown)].sort(compareSongsById),
+      )
+      setSongSaveMessage(`Published ${publishedPath} to the repo.`)
+      resetSongDraft()
+    } catch (err) {
+      setSongSaveMessage((err as Error).message)
+    } finally {
+      setIsSongSaving(false)
+    }
+  }
+
+  const handleUpdateSong = async (event: FormEvent) => {
+    event.preventDefault()
+    setSongManageMessage('')
+
+    if (!songEditFileName) {
+      setSongManageMessage('Select a song to edit first.')
+      return
+    }
+
+    if (!commitUrl) {
+      setSongManageMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
+      return
+    }
+
+    if (!requireAuthorizedEditor()) {
+      return
+    }
+
+    setIsSongUpdating(true)
+    try {
+      let updatedPath = ''
+      let lastError = ''
+
+      for (const basePath of songBasePaths) {
+        const repoPath = `${basePath}/${songEditFileName}`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path: repoPath,
+            content: songEditContent,
+            message: `Edit song ${songEditFileName}`,
+          }),
+        })
+
+        if (response.ok) {
+          updatedPath = repoPath
+          break
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
+          )
+        }
+        const errorText = await response.text()
+        lastError = errorText || `Update failed (${response.status})`
+      }
+
+      if (!updatedPath) {
+        throw new Error(lastError || 'Update failed for all song path options.')
+      }
+
+      const updatedSong = parseSongFromRaw(songEditFileName, songEditContent)
+      setExistingSongs((prev) =>
+        prev
+          .map((song) => (song.fileName === songEditFileName ? updatedSong : song))
+          .sort(compareSongsById),
+      )
+
+      setSongManageMessage(`Updated ${updatedPath} in the repo.`)
+    } catch (err) {
+      setSongManageMessage((err as Error).message)
+    } finally {
+      setIsSongUpdating(false)
+    }
+  }
+
+  const handleDeleteSong = async (song: ExistingSong) => {
+    if (!window.confirm(`Delete ${song.fileName}?`)) {
+      return
+    }
+
+    if (!commitUrl) {
+      setSongManageMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
+      return
+    }
+
+    if (!requireAuthorizedEditor()) {
+      return
+    }
+
+    setSongManageMessage('')
+    setIsSongDeleting(true)
+    try {
+      let deletedPath = ''
+      let lastError = ''
+
+      for (const basePath of songBasePaths) {
+        const repoPath = `${basePath}/${song.fileName}`
+        const response = await fetch(commitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            path: repoPath,
+            content: '',
+            delete: true,
+            message: `Delete song ${song.fileName.replace('.md', '')}`,
+          }),
+        })
+
+        if (response.ok) {
+          deletedPath = repoPath
+          break
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
+          )
+        }
+        const errorText = await response.text()
+        lastError = errorText || `Delete failed (${response.status})`
+      }
+
+      if (!deletedPath) {
+        throw new Error(lastError || 'Delete failed for all song path options.')
+      }
+
+      setExistingSongs((prev) => prev.filter((item) => item.fileName !== song.fileName))
+      setSongManageMessage(`Deleted ${deletedPath} in the repo.`)
+      if (songEditFileName === song.fileName) {
+        setSongEditFileName('')
+        setSongEditContent('')
+      }
+    } catch (err) {
+      setSongManageMessage((err as Error).message)
+    } finally {
+      setIsSongDeleting(false)
+    }
+  }
+
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-10 text-white">
       <header className="mb-8 flex items-center justify-between">
@@ -669,6 +991,13 @@ function Admin() {
             >
               Manage posts
             </button>
+            <button
+              className={`rounded px-3 py-2 text-sm ${activeTab === 'songs' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
+              onClick={() => setActiveTab('songs')}
+              type="button"
+            >
+              Songs
+            </button>
           </div>
 
           {activeTab === 'publish' ? (
@@ -719,7 +1048,7 @@ function Admin() {
 
               {saveMessage ? <p className="text-sm text-neutral-300">{saveMessage}</p> : null}
             </form>
-          ) : (
+          ) : activeTab === 'manage' ? (
             <div className="space-y-4">
               <ul className="space-y-2">
                 {existingPosts.map((post) => (
@@ -770,6 +1099,172 @@ function Admin() {
 
                 {manageMessage ? <p className="text-sm text-neutral-300">{manageMessage}</p> : null}
               </form>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <form onSubmit={handlePublishSong} className="space-y-4 rounded border border-neutral-700 bg-neutral-950 p-4">
+                <h2 className="text-lg font-semibold">Publish song</h2>
+                <p className="text-sm text-neutral-400">
+                  <code>{generatedSongId || 'song-id'}.md</code>
+                </p>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Song ID (optional, auto from title)</span>
+                  <input
+                    value={songIdValue}
+                    onChange={(e) => setSongIdValue(e.target.value)}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="recluse1989"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Title</span>
+                  <input
+                    value={songTitleValue}
+                    onChange={(e) => setSongTitleValue(e.target.value)}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="recluse 1989"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Artist</span>
+                  <input
+                    value={songArtistValue}
+                    onChange={(e) => setSongArtistValue(e.target.value)}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="crawler"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Cover art URL/path</span>
+                  <input
+                    value={songCoverArtValue}
+                    onChange={(e) => setSongCoverArtValue(e.target.value)}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="/art/cover.jpg"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Release date</span>
+                  <input
+                    value={songReleaseDateValue}
+                    onChange={(e) => setSongReleaseDateValue(e.target.value)}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="5/26/24"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Spotify URL</span>
+                  <input
+                    value={songSpotifyValue}
+                    onChange={(e) => setSongSpotifyValue(e.target.value)}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="https://open.spotify.com/..."
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Bandcamp URL</span>
+                  <input
+                    value={songBandcampValue}
+                    onChange={(e) => setSongBandcampValue(e.target.value)}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="https://...bandcamp.com/..."
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Soundcloud URL</span>
+                  <input
+                    value={songSoundcloudValue}
+                    onChange={(e) => setSongSoundcloudValue(e.target.value)}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="https://soundcloud.com/..."
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm text-neutral-300">Lyrics (Markdown)</span>
+                  <textarea
+                    value={songLyricsValue}
+                    onChange={(e) => setSongLyricsValue(e.target.value)}
+                    rows={10}
+                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    placeholder="Put lyrics here..."
+                  />
+                </label>
+
+                <button
+                  className="rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
+                  type="submit"
+                  disabled={isSongSaving || !isEditorAllowed}
+                >
+                  {isSongSaving ? 'Publishing…' : 'Publish song'}
+                </button>
+
+                {songSaveMessage ? <p className="text-sm text-neutral-300">{songSaveMessage}</p> : null}
+              </form>
+
+              <div className="space-y-4">
+                <ul className="space-y-2">
+                  {existingSongs.map((song) => (
+                    <li key={song.fileName} className="flex flex-wrap items-center justify-between gap-2 rounded border border-neutral-700 px-3 py-2">
+                      <div>
+                        <p className="font-mono text-sm">{song.fileName}</p>
+                        <p className="text-xs text-neutral-400">
+                          {song.title || '[untitled]'} {song.artist ? `- ${song.artist}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStartSongEdit(song)}
+                          className="rounded border border-neutral-600 px-3 py-1 text-sm disabled:opacity-50"
+                          disabled={!isEditorAllowed}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteSong(song)}
+                          disabled={isSongDeleting || !isEditorAllowed}
+                          className="rounded border border-red-500 px-3 py-1 text-sm text-red-300 disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                <form onSubmit={handleUpdateSong} className="space-y-3">
+                  <p className="text-sm text-neutral-400">
+                    {songEditFileName ? `Editing ${songEditFileName}` : 'Select a song to edit.'}
+                  </p>
+                  <textarea
+                    value={songEditContent}
+                    onChange={(e) => setSongEditContent(e.target.value)}
+                    rows={14}
+                    className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm"
+                    placeholder="Choose a song above to edit its raw markdown."
+                  />
+
+                  <button
+                    className="rounded bg-blue-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
+                    type="submit"
+                    disabled={isSongUpdating || !songEditFileName || !isEditorAllowed}
+                  >
+                    {isSongUpdating ? 'Saving…' : 'Save song .md changes'}
+                  </button>
+
+                  {songManageMessage ? <p className="text-sm text-neutral-300">{songManageMessage}</p> : null}
+                </form>
+              </div>
             </div>
           )}
         </section>

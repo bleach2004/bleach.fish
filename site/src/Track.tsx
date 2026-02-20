@@ -1,53 +1,54 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import tracks from './music/tracks.json'; // Adjust path if needed
+import React from 'react'
+import ReactMarkdown from 'react-markdown'
+import { useParams } from 'react-router-dom'
+import { findSongById } from './music/tracks'
+
+const externalLink = (value: string) =>
+  value ? (
+    <a className="p" href={value} target="_blank" rel="noopener noreferrer">
+      {value.replace(/^https?:\/\//, '')}
+    </a>
+  ) : null
 
 const Track: React.FC = () => {
-  const { id } = useParams<{ id: string }>(); // Get the dynamic parameter from the URL
-
-  // Find the currentSong in the JSON data
-  const currentSong = tracks.find((track) => track.id === id);
+  const { id } = useParams<{ id: string }>()
+  const currentSong = findSongById(id)
 
   if (!currentSong) {
-    return <h1>Song not found</h1>;
+    return <h1>Song not found</h1>
   }
 
   return (
-    <div className='wrapper track-wrapper'>
+    <div className="wrapper track-wrapper">
       <div className="track-container">
-        <img
-          className="cover-static"
-          src={currentSong.coverArt}
-          alt={currentSong.title}
-        />
+        <img className="cover-static" src={currentSong.coverArt} alt={currentSong.title} />
         <div className="track-title">
           <p className="h2">{currentSong.title}</p>
           <p className="h3">{currentSong.artist}</p>
         </div>
       </div>
-      <div className='track-info'>
+      <div className="track-info">
         <br />
-        <p className="p">{currentSong.lyrics || '[no lyrics]'}</p>
-        <br />
-        <a className="p" href={currentSong.spotify} target="_blank" rel="noopener noreferrer">
-          spotify
-        </a>
-        <br />
-        <a className="p" href={currentSong.bandcamp} target="_blank" rel="noopener noreferrer">
-          bandcamp
-        </a>
-        <br />
-        <a className="p" href={currentSong.soundcloud} target="_blank" rel="noopener noreferrer">
-          soundcloud
-        </a>
-        <br />
+        {currentSong.lyrics ? (
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p className="p">{children}</p>,
+            }}
+          >
+            {currentSong.lyrics}
+          </ReactMarkdown>
+        ) : (
+          <p className="p">[no lyrics]</p>
+        )}
+        {currentSong.spotify ? <>{externalLink(currentSong.spotify)}<br /></> : null}
+        {currentSong.bandcamp ? <>{externalLink(currentSong.bandcamp)}<br /></> : null}
+        {currentSong.soundcloud ? <>{externalLink(currentSong.soundcloud)}<br /></> : null}
         <br />
         <p className="p">{currentSong.releaseDate}</p>
         <br />
       </div>
-
     </div>
-  );
-};
+  )
+}
 
-export default Track;
+export default Track
