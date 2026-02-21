@@ -4,7 +4,7 @@
   --secondary-color: rgb(77, 77, 77);
   --side-image-width: clamp(180px, 24vw, 320px);
   --center-lane-gap: clamp(24px, 4vw, 56px);
-  --content-lane-width: min(620px, calc(100vw - (2 * (var(--side-image-width) + var(--center-lane-gap))) - 4rem));
+  --content-lane-width: calc(100vw - (2 * (var(--side-image-width) + var(--center-lane-gap))) - 4rem);
   --media-width: clamp(130px, 32vw, 220px);
   --post-media-width: clamp(200px, 42vw, 320px);
   --times-text-size: 20px;
@@ -141,6 +141,20 @@ a {
   width: 150px;
 }
 
+.audio-grid {
+  display: grid;
+  width: min(var(--content-lane-width), calc(100vw - 4rem));
+  padding: 0 0.75rem;
+  grid-template-columns: repeat(auto-fit, 147px);
+  gap: 16px;
+}
+
+.audio-grid .cover {
+  width: 147px;
+  justify-self: center;
+  cursor: pointer;
+}
+
 .cover-static {
   outline-style: solid;
   outline-color: var(--primary-color);
@@ -258,6 +272,18 @@ a {
     width: 40%;
     margin-bottom: 20px;
   }
+
+  .audio-grid {
+    width: calc(100vw - 3rem);
+    padding: 0 0.5rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .audio-grid .cover {
+    max-width: 109px;
+    width: 100%;
+  }
   
 
   .track-title {
@@ -279,6 +305,19 @@ a {
   }
 }
 
+@media (min-width: 669px) and (max-width: 1024px) {
+  .audio-grid {
+    width: min(var(--content-lane-width), calc(100vw - 4rem));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .audio-grid .cover {
+    max-width: 132px;
+    width: 100%;
+  }
+}
+
 @media (max-width: 450px) {
   :root {
     --times-text-size: 16px;
@@ -288,4 +327,10 @@ a {
     width: 60%;
     margin-bottom: 20px;
   }
+
+  .audio-grid .cover {
+    width: 100%;
+    margin-bottom: 0;
+    max-width: 105px;
+}
 }
