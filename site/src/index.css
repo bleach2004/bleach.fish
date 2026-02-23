@@ -86,6 +86,10 @@ p, a {
   color: 	white;
 }
 
+.muted {
+  color: #666;
+}
+
 .diary-text {
   font-family: 'Times New Roman', Times, serif;
   font-size: var(--times-text-size);

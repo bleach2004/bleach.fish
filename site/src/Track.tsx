@@ -38,7 +38,7 @@ const Track: React.FC = () => {
             {currentSong.lyrics}
           </ReactMarkdown>
         ) : (
-          <p className="p">[no lyrics]</p>
+          <p className="p muted">[no lyrics]</p>
         )}
         {currentSong.spotify ? <>{externalLink(currentSong.spotify, 'spotify')}<br /></> : null}
         {currentSong.bandcamp ? <>{externalLink(currentSong.bandcamp, 'bandcamp')}<br /></> : null}
