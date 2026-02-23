@@ -152,6 +152,49 @@ type SongFrontMatter = {
 
 const normalizeSongField = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 
+function parseArtFileName(value: string | undefined) {
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed || trimmed.startsWith('data:')) {
+    return null
+  }
+
+  let pathname = trimmed
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      pathname = new URL(trimmed).pathname
+    } catch {
+      pathname = trimmed
+    }
+  }
+
+  const withoutQuery = pathname.split(/[?#]/)[0]
+  if (withoutQuery.startsWith('art/')) {
+    const fileName = withoutQuery.slice(4)
+    return fileName && !fileName.includes('/') ? fileName : null
+  }
+
+  const markerIndex = withoutQuery.lastIndexOf('/art/')
+  if (markerIndex === -1) {
+    return null
+  }
+
+  const fileName = withoutQuery.slice(markerIndex + 5)
+  if (!fileName || fileName.includes('/')) {
+    return null
+  }
+
+  return fileName
+}
+
+function parsePostImageFileName(raw: string) {
+  const parsed = fm<{ image?: string }>(raw)
+  return parseArtFileName(parsed.attributes.image)
+}
+
 function parseSongFromRaw(fileName: string, raw: string): ExistingSong {
   const parsed = fm<SongFrontMatter>(raw)
   const fallbackId = fileName.replace('.md', '')
@@ -584,6 +627,50 @@ function Admin() {
     return true
   }
 
+  const deleteArtAsset = async (fileName: string) => {
+    if (!commitUrl) {
+      return { ok: false, error: 'Missing commit endpoint.' }
+    }
+
+    let deletedPath = ''
+    let lastError = ''
+
+    for (const basePath of artBasePaths) {
+      const repoPath = `${basePath}/${fileName}`
+      const response = await fetch(commitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          path: repoPath,
+          content: '',
+          delete: true,
+          message: `Delete asset ${fileName}`,
+        }),
+      })
+
+      if (response.ok) {
+        deletedPath = repoPath
+        break
+      }
+
+      if (response.status === 404) {
+        return { ok: false, error: 'Commit endpoint not found.' }
+      }
+
+      const errorText = await response.text()
+      lastError = errorText || `Delete failed (${response.status})`
+    }
+
+    if (!deletedPath) {
+      return { ok: false, error: lastError || 'Delete failed for all asset path options.' }
+    }
+
+    return { ok: true, path: deletedPath }
+  }
+
   const handlePublish = async (event: FormEvent) => {
     event.preventDefault()
     setSaveMessage('')
@@ -698,6 +785,9 @@ function Admin() {
       return
     }
 
+    const previousPost = existingPosts.find((post) => post.fileName === editFileName)
+    const previousImageFile = previousPost ? parsePostImageFileName(previousPost.raw) : null
+
     setIsUpdating(true)
     try {
       let updatedPath = ''
@@ -753,7 +843,18 @@ function Admin() {
           .sort(comparePostsByDateAndSequence),
       )
 
-      setManageMessage(`Updated ${updatedPath} in the repo.`)
+      let updatedMessage = `Updated ${updatedPath} in the repo.`
+      const nextImageFile = parsePostImageFileName(editContent)
+      if (previousImageFile && previousImageFile !== nextImageFile) {
+        const deleteResult = await deleteArtAsset(previousImageFile)
+        if (deleteResult.ok) {
+          updatedMessage += ` Removed old image ${previousImageFile}.`
+        } else if (deleteResult.error) {
+          updatedMessage += ` (Old image not removed: ${deleteResult.error})`
+        }
+      }
+
+      setManageMessage(updatedMessage)
     } catch (err) {
       setManageMessage((err as Error).message)
     } finally {
@@ -912,6 +1013,7 @@ function Admin() {
 
     setIsSongSaving(true)
     try {
+      const previousCoverArtFile = isSongEditing ? parseArtFileName(songCoverArtValue) : null
       if (!isSongEditing && existingSongs.some((song) => song.id === generatedId)) {
         setSongSaveMessage(`A song with id "${generatedId}" already exists.`)
         return
@@ -1024,7 +1126,18 @@ function Admin() {
         }
         return [...prev, parsedSong].sort(compareSongsById)
       })
-      setSongSaveMessage(`${isSongEditing ? 'Updated' : 'Published'} ${publishedPath} to the repo.`)
+      let successMessage = `${isSongEditing ? 'Updated' : 'Published'} ${publishedPath} to the repo.`
+      const nextCoverArtFile = parseArtFileName(resolvedCoverArt)
+      if (isSongEditing && hasNewCoverArt && previousCoverArtFile && previousCoverArtFile !== nextCoverArtFile) {
+        const deleteResult = await deleteArtAsset(previousCoverArtFile)
+        if (deleteResult.ok) {
+          successMessage += ` Removed old cover art ${previousCoverArtFile}.`
+        } else if (deleteResult.error) {
+          successMessage += ` (Old cover art not removed: ${deleteResult.error})`
+        }
+      }
+
+      setSongSaveMessage(successMessage)
       resetSongDraft()
       if (isSongEditing) {
         setSongEditFileName('')
