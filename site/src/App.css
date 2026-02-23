@@ -5,3 +5,166 @@
 body {
   background-color: black;
 }
+
+.admin-90s {
+  color: #ffffff;
+  font-family: "Times New Roman", Times, serif;
+  letter-spacing: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.admin-header h1 {
+  font-family: "Times New Roman", Times, serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.admin-shell {
+  background: transparent;
+  border: 1px solid #ffffff;
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-tabs {
+  padding: 0.35rem;
+  border: 1px solid #ffffff;
+  background: transparent;
+}
+
+.admin-tab {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  transition: none;
+}
+
+.admin-tab:hover {
+  transform: none;
+  background: transparent;
+}
+
+.admin-panel {
+  background: transparent;
+  border: 1px solid #ffffff;
+  outline: none;
+  padding: 1rem;
+}
+
+.admin-list-item {
+  background: transparent;
+  border: 1px solid #ffffff;
+  outline: none;
+}
+
+.admin-90s label span {
+  color: #ffffff;
+  letter-spacing: 0;
+  font-size: 0.75rem;
+  text-transform: none;
+  font-family: "Times New Roman", Times, serif;
+}
+
+.admin-90s input,
+.admin-90s textarea,
+.admin-90s select {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  outline: none;
+  font-family: "Times New Roman", Times, serif;
+}
+
+.admin-90s input[type="file"] {
+  padding: 0.35rem 0.5rem;
+  color: #ffffff;
+}
+
+.admin-90s input[type="file"]::file-selector-button {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  padding: 0.25rem 0.6rem;
+  font-family: "Times New Roman", Times, serif;
+  margin-right: 0.75rem;
+  cursor: pointer;
+}
+
+.admin-90s input[type="file"]::-webkit-file-upload-button {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  padding: 0.25rem 0.6rem;
+  font-family: "Times New Roman", Times, serif;
+  margin-right: 0.75rem;
+  cursor: pointer;
+}
+
+.admin-90s textarea {
+  font-family: "Times New Roman", Times, serif;
+}
+
+.admin-button {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  outline: none;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: none;
+}
+
+.admin-button:hover {
+  transform: none;
+  background: transparent;
+}
+
+.admin-button.admin-primary {
+  background: transparent;
+}
+
+.admin-button.admin-secondary {
+  background: transparent;
+}
+
+.admin-button.admin-danger {
+  border-color: #ffffff;
+  outline-color: transparent;
+  color: #ffffff;
+}
+
+.admin-link {
+  color: #ffffff;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.admin-alert {
+  border: 1px solid #ffffff;
+  outline: none;
+  background: transparent;
+}
+
+.admin-alert.admin-alert-warning {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.admin-alert.admin-alert-danger {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.admin-90s code {
+  background: transparent;
+  border: 1px solid #ffffff;
+  padding: 0.1rem 0.3rem;
+}
+
+@media (max-width: 720px) {
+  .admin-90s {
+    outline-offset: 0;
+  }
+}

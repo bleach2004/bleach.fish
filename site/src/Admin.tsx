@@ -19,8 +19,13 @@ interface ExistingSong {
   id: string
   title: string
   artist: string
+  coverArt: string
+  releaseDate: string
+  spotify: string
+  bandcamp: string
+  soundcloud: string
+  lyrics: string
   fileName: string
-  raw: string
 }
 
 function parseAllowedUsers(value: string | undefined) {
@@ -28,6 +33,22 @@ function parseAllowedUsers(value: string | undefined) {
     .split(',')
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean)
+}
+
+function parseBooleanFlag(value: string | undefined) {
+  if (!value) {
+    return null
+  }
+
+  const normalized = value.trim().toLowerCase()
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false
+  }
+
+  return null
 }
 
 const postModules = import.meta.glob('./posts/*.md', {
@@ -117,16 +138,36 @@ function toSongId(value: string) {
     .replace(/^-+|-+$/g, '')
 }
 
+type SongFrontMatter = {
+  id?: string
+  title?: string
+  artist?: string
+  coverArt?: string
+  releaseDate?: string
+  spotify?: string
+  bandcamp?: string
+  soundcloud?: string
+  lyrics?: string
+}
+
+const normalizeSongField = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
+
 function parseSongFromRaw(fileName: string, raw: string): ExistingSong {
-  const parsed = fm<{ id?: string; title?: string; artist?: string }>(raw)
+  const parsed = fm<SongFrontMatter>(raw)
   const fallbackId = fileName.replace('.md', '')
+  const body = typeof parsed.body === 'string' ? parsed.body : ''
 
   return {
-    id: parsed.attributes.id || fallbackId,
-    title: parsed.attributes.title || '',
-    artist: parsed.attributes.artist || '',
+    id: normalizeSongField(parsed.attributes.id) || fallbackId,
+    title: normalizeSongField(parsed.attributes.title),
+    artist: normalizeSongField(parsed.attributes.artist),
+    coverArt: normalizeSongField(parsed.attributes.coverArt),
+    releaseDate: normalizeSongField(parsed.attributes.releaseDate),
+    spotify: normalizeSongField(parsed.attributes.spotify),
+    bandcamp: normalizeSongField(parsed.attributes.bandcamp),
+    soundcloud: normalizeSongField(parsed.attributes.soundcloud),
+    lyrics: normalizeSongField(parsed.attributes.lyrics) || body.trim(),
     fileName,
-    raw,
   }
 }
 
@@ -184,6 +225,7 @@ function Admin() {
   const [songArtistValue, setSongArtistValue] = useState('')
   const [songCoverArtDataUrl, setSongCoverArtDataUrl] = useState('')
   const [songCoverArtFileName, setSongCoverArtFileName] = useState('')
+  const [songCoverArtValue, setSongCoverArtValue] = useState('')
   const [songReleaseDateValue, setSongReleaseDateValue] = useState('')
   const [songSpotifyValue, setSongSpotifyValue] = useState('')
   const [songBandcampValue, setSongBandcampValue] = useState('')
@@ -192,9 +234,7 @@ function Admin() {
   const [songSaveMessage, setSongSaveMessage] = useState('')
   const [isSongSaving, setIsSongSaving] = useState(false)
   const [songEditFileName, setSongEditFileName] = useState('')
-  const [songEditContent, setSongEditContent] = useState('')
   const [songManageMessage, setSongManageMessage] = useState('')
-  const [isSongUpdating, setIsSongUpdating] = useState(false)
   const [isSongDeleting, setIsSongDeleting] = useState(false)
 
   const initialPosts = useMemo<ExistingPost[]>(() => {
@@ -223,6 +263,7 @@ function Admin() {
   }, [])
   const [existingSongs, setExistingSongs] = useState<ExistingSong[]>(initialSongs)
   const generatedSongId = useMemo(() => toSongId(songIdValue || songTitleValue), [songIdValue, songTitleValue])
+  const isSongEditing = Boolean(songEditFileName)
 
   const rawClientId = import.meta.env.VITE_GITHUB_CLIENT_ID as string | undefined
   const clientId = rawClientId?.trim()
@@ -233,6 +274,11 @@ function Admin() {
   const rawSongsBasePath = import.meta.env.VITE_CMS_SONGS_BASE_PATH as string | undefined
   const rawArtBasePath = import.meta.env.VITE_CMS_ART_BASE_PATH as string | undefined
   const rawAllowedUsers = import.meta.env.VITE_CMS_ALLOWED_GITHUB_USERS as string | undefined
+  const rawPreviewMode = import.meta.env.VITE_ADMIN_PREVIEW as string | undefined
+  const isPreviewMode = useMemo(() => {
+    const parsed = parseBooleanFlag(rawPreviewMode)
+    return parsed ?? import.meta.env.DEV
+  }, [rawPreviewMode])
   const commitUrl = useMemo(() => {
     if (rawCommitUrl?.trim()) {
       return rawCommitUrl.trim()
@@ -292,6 +338,10 @@ function Admin() {
   }, [rawArtBasePath])
   const allowedGitHubUsers = useMemo(() => parseAllowedUsers(rawAllowedUsers), [rawAllowedUsers])
   const isEditorAllowed = useMemo(() => {
+    if (isPreviewMode) {
+      return true
+    }
+
     if (!user) {
       return false
     }
@@ -301,17 +351,34 @@ function Admin() {
     }
 
     return allowedGitHubUsers.includes(user.login.toLowerCase())
-  }, [allowedGitHubUsers, user])
+  }, [allowedGitHubUsers, isPreviewMode, user])
   const redirectUri = useMemo(() => `${window.location.origin}/admin`, [])
 
   useEffect(() => {
+    if (isPreviewMode) {
+      setAuthError('')
+      setToken('preview')
+      setUser({
+        login: 'local-preview',
+        avatar_url:
+          'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" fill="%23262626"/><text x="50%" y="54%" font-size="28" text-anchor="middle" fill="%23ffffff" font-family="Arial">LP</text></svg>',
+        html_url: 'https://github.com',
+        name: 'Local Preview',
+      })
+      return
+    }
+
     const persisted = localStorage.getItem(SESSION_KEY)
     if (persisted) {
       setToken(persisted)
     }
-  }, [])
+  }, [isPreviewMode])
 
   useEffect(() => {
+    if (isPreviewMode) {
+      return
+    }
+
     const initializeAuth = async () => {
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
@@ -385,9 +452,13 @@ function Admin() {
     }
 
     void initializeAuth()
-  }, [allowedGitHubUsers, exchangeUrl, redirectUri])
+  }, [allowedGitHubUsers, exchangeUrl, isPreviewMode, redirectUri])
 
   useEffect(() => {
+    if (isPreviewMode) {
+      return
+    }
+
     const fetchUser = async () => {
       if (!token) {
         setUser(null)
@@ -416,9 +487,14 @@ function Admin() {
     }
 
     void fetchUser()
-  }, [token])
+  }, [isPreviewMode, token])
 
   const handleLogin = () => {
+    if (isPreviewMode) {
+      setAuthError('Preview mode is enabled. Disable it to use GitHub login.')
+      return
+    }
+
     if (!clientId) {
       setAuthError('Missing VITE_GITHUB_CLIENT_ID in your environment.')
       return
@@ -434,12 +510,20 @@ function Admin() {
   }
 
   const handleLogout = () => {
+    if (isPreviewMode) {
+      return
+    }
+
     localStorage.removeItem(SESSION_KEY)
     setToken(null)
     setUser(null)
   }
 
   const requireAuthorizedEditor = () => {
+    if (isPreviewMode) {
+      return true
+    }
+
     if (!token) {
       const message = 'Missing GitHub session token. Please log out and sign in again.'
       setSaveMessage(message)
@@ -491,9 +575,22 @@ function Admin() {
     }
   }
 
+  const handlePreviewOnlyMessage = (setMessage: (message: string) => void) => {
+    if (!isPreviewMode) {
+      return false
+    }
+
+    setMessage('Preview mode: changes are not saved to GitHub.')
+    return true
+  }
+
   const handlePublish = async (event: FormEvent) => {
     event.preventDefault()
     setSaveMessage('')
+
+    if (handlePreviewOnlyMessage(setSaveMessage)) {
+      return
+    }
 
     if (!commitUrl) {
       setSaveMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
@@ -583,6 +680,10 @@ function Admin() {
     event.preventDefault()
     setManageMessage('')
 
+    if (handlePreviewOnlyMessage(setManageMessage)) {
+      return
+    }
+
     if (!editFileName) {
       setManageMessage('Select a post to edit first.')
       return
@@ -661,6 +762,10 @@ function Admin() {
   }
 
   const handleDeletePost = async (post: ExistingPost) => {
+    if (handlePreviewOnlyMessage(setManageMessage)) {
+      return
+    }
+
     if (!window.confirm(`Delete ${post.fileName}?`)) {
       return
     }
@@ -749,6 +854,7 @@ function Admin() {
     setSongArtistValue('')
     setSongCoverArtDataUrl('')
     setSongCoverArtFileName('')
+    setSongCoverArtValue('')
     setSongReleaseDateValue('')
     setSongSpotifyValue('')
     setSongBandcampValue('')
@@ -757,14 +863,37 @@ function Admin() {
   }
 
   const handleStartSongEdit = (song: ExistingSong) => {
+    setActiveTab('songs')
     setSongEditFileName(song.fileName)
-    setSongEditContent(song.raw)
+    setSongIdValue(song.id)
+    setSongTitleValue(song.title)
+    setSongArtistValue(song.artist)
+    setSongCoverArtValue(song.coverArt)
+    setSongCoverArtDataUrl('')
+    setSongCoverArtFileName('')
+    setSongReleaseDateValue(song.releaseDate)
+    setSongSpotifyValue(song.spotify)
+    setSongBandcampValue(song.bandcamp)
+    setSongSoundcloudValue(song.soundcloud)
+    setSongLyricsValue(song.lyrics)
+    setSongSaveMessage('')
+    setSongManageMessage('')
+  }
+
+  const handleCancelSongEdit = () => {
+    setSongEditFileName('')
+    resetSongDraft()
+    setSongSaveMessage('')
     setSongManageMessage('')
   }
 
   const handlePublishSong = async (event: FormEvent) => {
     event.preventDefault()
     setSongSaveMessage('')
+
+    if (handlePreviewOnlyMessage(setSongSaveMessage)) {
+      return
+    }
 
     if (!commitUrl) {
       setSongSaveMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
@@ -781,71 +910,80 @@ function Admin() {
       return
     }
 
-    if (existingSongs.some((song) => song.id === generatedId)) {
-      setSongSaveMessage(`A song with id "${generatedId}" already exists.`)
-      return
-    }
-
-    if (!songCoverArtDataUrl || !songCoverArtFileName) {
-      setSongSaveMessage('Cover art upload is required.')
-      return
-    }
-
     setIsSongSaving(true)
     try {
-      let resolvedCoverArt = ''
-
-      const extension = getFileExtension(songCoverArtFileName) || '.jpg'
-      const artFileName = `${generatedId}${extension}`
-      const artPublicUrl = `/art/${artFileName}`
-      const contentBase64 = dataUrlToBase64(songCoverArtDataUrl)
-      let uploadedPath = ''
-      let uploadError = ''
-
-      for (const basePath of artBasePaths) {
-        const path = `${basePath}/${artFileName}`
-        const response = await fetch(commitUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            path,
-            contentBase64,
-            message: `Add cover art ${artFileName}`,
-            id: generatedId,
-          }),
-        })
-
-        if (response.ok) {
-          uploadedPath = path
-          break
-        }
-
-        if (response.status === 404) {
-          throw new Error(
-            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
-          )
-        }
-
-        const errorText = await response.text()
-        uploadError = errorText || `Cover art upload failed (${response.status})`
+      if (!isSongEditing && existingSongs.some((song) => song.id === generatedId)) {
+        setSongSaveMessage(`A song with id "${generatedId}" already exists.`)
+        return
       }
 
-      if (!uploadedPath) {
-        throw new Error(uploadError || 'Cover art upload failed for all art path options.')
+      if (isSongEditing && existingSongs.some((song) => song.fileName !== songEditFileName && song.id === generatedId)) {
+        setSongSaveMessage(`A different song already uses id "${generatedId}".`)
+        return
       }
 
-      resolvedCoverArt = artPublicUrl
+      const hasNewCoverArt = Boolean(songCoverArtDataUrl && songCoverArtFileName)
+      let resolvedCoverArt = songCoverArtValue.trim()
+
+      if (hasNewCoverArt) {
+        const extension = getFileExtension(songCoverArtFileName) || '.jpg'
+        const artFileName = `${generatedId}${extension}`
+        const artPublicUrl = `/art/${artFileName}`
+        const contentBase64 = dataUrlToBase64(songCoverArtDataUrl)
+        let uploadedPath = ''
+        let uploadError = ''
+
+        for (const basePath of artBasePaths) {
+          const path = `${basePath}/${artFileName}`
+          const response = await fetch(commitUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              path,
+              contentBase64,
+              message: `Add cover art ${artFileName}`,
+              id: generatedId,
+            }),
+          })
+
+          if (response.ok) {
+            uploadedPath = path
+            break
+          }
+
+          if (response.status === 404) {
+            throw new Error(
+              'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
+            )
+          }
+
+          const errorText = await response.text()
+          uploadError = errorText || `Cover art upload failed (${response.status})`
+        }
+
+        if (!uploadedPath) {
+          throw new Error(uploadError || 'Cover art upload failed for all art path options.')
+        }
+
+        resolvedCoverArt = artPublicUrl
+      }
+
+      if (!resolvedCoverArt) {
+        setSongSaveMessage('Cover art upload is required.')
+        return
+      }
 
       const markdown = `---\nid: "${generatedId}"\ntitle: ${JSON.stringify(songTitleValue.trim())}\nartist: ${JSON.stringify(songArtistValue.trim())}\ncoverArt: ${JSON.stringify(resolvedCoverArt)}\nreleaseDate: ${JSON.stringify(songReleaseDateValue.trim())}\nspotify: ${JSON.stringify(songSpotifyValue.trim())}\nbandcamp: ${JSON.stringify(songBandcampValue.trim())}\nsoundcloud: ${JSON.stringify(songSoundcloudValue.trim())}\n---\n\n${songLyricsValue.trim()}\n`
 
       let publishedPath = ''
       let lastError = ''
+      const targetFileName = isSongEditing ? songEditFileName : `${generatedId}.md`
 
       for (const basePath of songBasePaths) {
-        const path = `${basePath}/${generatedId}.md`
+        const path = `${basePath}/${targetFileName}`
         const response = await fetch(commitUrl, {
           method: 'POST',
           headers: {
@@ -855,7 +993,7 @@ function Admin() {
           body: JSON.stringify({
             path,
             content: markdown,
-            message: `Add song ${generatedId}`,
+            message: isSongEditing ? `Edit song ${targetFileName}` : `Add song ${generatedId}`,
             id: generatedId,
           }),
         })
@@ -879,11 +1017,18 @@ function Admin() {
         throw new Error(lastError || 'Publish failed for all song path options.')
       }
 
-      setExistingSongs((prev) =>
-        [...prev, parseSongFromRaw(`${generatedId}.md`, markdown)].sort(compareSongsById),
-      )
-      setSongSaveMessage(`Published ${publishedPath} to the repo.`)
+      const parsedSong = parseSongFromRaw(targetFileName, markdown)
+      setExistingSongs((prev) => {
+        if (isSongEditing) {
+          return prev.map((song) => (song.fileName === targetFileName ? parsedSong : song)).sort(compareSongsById)
+        }
+        return [...prev, parsedSong].sort(compareSongsById)
+      })
+      setSongSaveMessage(`${isSongEditing ? 'Updated' : 'Published'} ${publishedPath} to the repo.`)
       resetSongDraft()
+      if (isSongEditing) {
+        setSongEditFileName('')
+      }
     } catch (err) {
       setSongSaveMessage((err as Error).message)
     } finally {
@@ -891,78 +1036,11 @@ function Admin() {
     }
   }
 
-  const handleUpdateSong = async (event: FormEvent) => {
-    event.preventDefault()
-    setSongManageMessage('')
-
-    if (!songEditFileName) {
-      setSongManageMessage('Select a song to edit first.')
-      return
-    }
-
-    if (!commitUrl) {
-      setSongManageMessage('Missing commit endpoint. Set VITE_CMS_COMMIT_URL or provide /api/cms/commit on your worker.')
-      return
-    }
-
-    if (!requireAuthorizedEditor()) {
-      return
-    }
-
-    setIsSongUpdating(true)
-    try {
-      let updatedPath = ''
-      let lastError = ''
-
-      for (const basePath of songBasePaths) {
-        const repoPath = `${basePath}/${songEditFileName}`
-        const response = await fetch(commitUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            path: repoPath,
-            content: songEditContent,
-            message: `Edit song ${songEditFileName}`,
-          }),
-        })
-
-        if (response.ok) {
-          updatedPath = repoPath
-          break
-        }
-
-        if (response.status === 404) {
-          throw new Error(
-            'Commit endpoint not found. Deploy /api/cms/commit on your Worker or set VITE_CMS_COMMIT_URL to the correct endpoint.',
-          )
-        }
-        const errorText = await response.text()
-        lastError = errorText || `Update failed (${response.status})`
-      }
-
-      if (!updatedPath) {
-        throw new Error(lastError || 'Update failed for all song path options.')
-      }
-
-      const updatedSong = parseSongFromRaw(songEditFileName, songEditContent)
-      setExistingSongs((prev) =>
-        prev
-          .map((song) => (song.fileName === songEditFileName ? updatedSong : song))
-          .sort(compareSongsById),
-      )
-
-      setSongManageMessage(`Updated ${updatedPath} in the repo.`)
-    } catch (err) {
-      setSongManageMessage((err as Error).message)
-    } finally {
-      setIsSongUpdating(false)
-    }
-  }
-
   const handleDeleteSong = async (song: ExistingSong) => {
+    if (handlePreviewOnlyMessage(setSongManageMessage)) {
+      return
+    }
+
     if (!window.confirm(`Delete ${song.fileName}?`)) {
       return
     }
@@ -1020,7 +1098,7 @@ function Admin() {
       setSongManageMessage(`Deleted ${deletedPath} in the repo.`)
       if (songEditFileName === song.fileName) {
         setSongEditFileName('')
-        setSongEditContent('')
+        resetSongDraft()
       }
     } catch (err) {
       setSongManageMessage((err as Error).message)
@@ -1030,33 +1108,40 @@ function Admin() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-4 py-10 text-white">
-      <header className="mb-8 flex items-center justify-between">
+    <main className="admin-90s mx-auto min-h-screen max-w-4xl px-4 py-10 text-white">
+      <header className="admin-header mb-8 flex items-center justify-between">
         <div>
           <p className="text-sm uppercase tracking-wider text-neutral-400">bleach.fish</p>
           <h1 className="text-3xl font-bold">Admin CMS</h1>
         </div>
         {user ? (
-          <button className="rounded border border-neutral-500 px-4 py-2" onClick={handleLogout}>
+          <button className="admin-button admin-secondary rounded border border-neutral-500 px-4 py-2" onClick={handleLogout}>
             Log out
           </button>
         ) : null}
       </header>
 
-      {authError ? <p className="mb-6 rounded border border-red-500 px-4 py-3 text-red-300">{authError}</p> : null}
+      {authError ? (
+        <p className="admin-alert admin-alert-danger mb-6 rounded border border-red-500 px-4 py-3 text-red-300">{authError}</p>
+      ) : null}
 
       {!user ? (
         <button
           type="button"
           onClick={handleLogin}
           disabled={isAuthorizing}
-          className="cursor-pointer bg-transparent p-0 text-white underline disabled:opacity-50"
+          className="admin-link cursor-pointer bg-transparent p-0 text-white underline disabled:opacity-50"
           style={{ fontFamily: 'Times New Roman, Times, serif' }}
         >
           log in
         </button>
       ) : (
-        <section className="space-y-5 rounded border border-neutral-700 bg-neutral-900 p-6">
+        <section className="admin-shell space-y-5 rounded border border-neutral-700 bg-neutral-900 p-6">
+          {isPreviewMode ? (
+            <p className="admin-alert admin-alert-warning rounded border border-yellow-500 px-3 py-2 text-sm text-yellow-200">
+              Preview mode is enabled. Admin changes are not written to GitHub.
+            </p>
+          ) : null}
           <div className="flex items-center gap-3">
             <img src={user.avatar_url} alt={user.login} className="h-10 w-10 rounded-full" />
             <div>
@@ -1068,29 +1153,29 @@ function Admin() {
           </div>
 
           {!isEditorAllowed ? (
-            <p className="rounded border border-red-500 px-3 py-2 text-sm text-red-300">
+            <p className="admin-alert admin-alert-danger rounded border border-red-500 px-3 py-2 text-sm text-red-300">
               This account is signed in but not allowed to publish. Ask the site owner to add your username to{' '}
               <code>VITE_CMS_ALLOWED_GITHUB_USERS</code> (frontend) and <code>ALLOWED_GITHUB_USERS</code> (Worker).
             </p>
           ) : null}
 
-          <div className="flex gap-2">
+          <div className="admin-tabs flex gap-2">
             <button
-              className={`rounded px-3 py-2 text-sm ${activeTab === 'publish' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
+              className={`admin-tab rounded px-3 py-2 text-sm ${activeTab === 'publish' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
               onClick={() => setActiveTab('publish')}
               type="button"
             >
               Publish
             </button>
             <button
-              className={`rounded px-3 py-2 text-sm ${activeTab === 'manage' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
+              className={`admin-tab rounded px-3 py-2 text-sm ${activeTab === 'manage' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
               onClick={() => setActiveTab('manage')}
               type="button"
             >
               Manage posts
             </button>
             <button
-              className={`rounded px-3 py-2 text-sm ${activeTab === 'songs' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
+              className={`admin-tab rounded px-3 py-2 text-sm ${activeTab === 'songs' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`}
               onClick={() => setActiveTab('songs')}
               type="button"
             >
@@ -1099,7 +1184,7 @@ function Admin() {
           </div>
 
           {activeTab === 'publish' ? (
-            <form onSubmit={handlePublish} className="space-y-4">
+            <form onSubmit={handlePublish} className="admin-panel space-y-4">
               <p className="text-sm text-neutral-400">
                 <code>{postId || 'YYMMDD'}.md</code>
               </p>
@@ -1120,7 +1205,7 @@ function Admin() {
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
+                  className="admin-file w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
                 />
                 {imageValue ? <span className="mt-1 block text-xs text-neutral-400">Image attached.</span> : null}
               </label>
@@ -1131,13 +1216,13 @@ function Admin() {
                   type="file"
                   accept="audio/*"
                   onChange={handleAudioUpload}
-                  className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
+                  className="admin-file w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2"
                 />
                 {audioValue ? <span className="mt-1 block text-xs text-neutral-400">Audio attached.</span> : null}
               </label>
 
               <button
-                className="rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
+                className="admin-button admin-primary rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
                 type="submit"
                 disabled={isSaving || !isEditorAllowed}
               >
@@ -1148,9 +1233,12 @@ function Admin() {
             </form>
           ) : activeTab === 'manage' ? (
             <div className="space-y-4">
-              <ul className="space-y-2">
+              <ul className="admin-list space-y-2">
                 {existingPosts.map((post) => (
-                  <li key={post.fileName} className="flex flex-wrap items-center justify-between gap-2 rounded border border-neutral-700 px-3 py-2">
+                  <li
+                    key={post.fileName}
+                    className="admin-list-item flex flex-wrap items-center justify-between gap-2 rounded border border-neutral-700 px-3 py-2"
+                  >
                     <div>
                       <p className="font-mono text-sm">{post.fileName}</p>
                       {post.date ? <p className="text-xs text-neutral-400">{post.date}</p> : null}
@@ -1159,7 +1247,7 @@ function Admin() {
                       <button
                         type="button"
                         onClick={() => handleStartEdit(post)}
-                        className="rounded border border-neutral-600 px-3 py-1 text-sm disabled:opacity-50"
+                        className="admin-button admin-secondary rounded border border-neutral-600 px-3 py-1 text-sm disabled:opacity-50"
                         disabled={!isEditorAllowed}
                       >
                         Edit
@@ -1168,7 +1256,7 @@ function Admin() {
                         type="button"
                         onClick={() => void handleDeletePost(post)}
                         disabled={isDeleting || !isEditorAllowed}
-                        className="rounded border border-red-500 px-3 py-1 text-sm text-red-300 disabled:opacity-50"
+                        className="admin-button admin-danger rounded border border-red-500 px-3 py-1 text-sm text-red-300 disabled:opacity-50"
                       >
                         Delete
                       </button>
@@ -1177,7 +1265,7 @@ function Admin() {
                 ))}
               </ul>
 
-              <form onSubmit={handleUpdatePost} className="space-y-3">
+              <form onSubmit={handleUpdatePost} className="admin-panel space-y-3">
                 <p className="text-sm text-neutral-400">{editFileName ? `Editing ${editFileName}` : 'Select a post to edit.'}</p>
                 <textarea
                   value={editContent}
@@ -1188,7 +1276,7 @@ function Admin() {
                 />
 
                 <button
-                  className="rounded bg-blue-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
+                  className="admin-button admin-primary rounded bg-blue-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
                   type="submit"
                   disabled={isUpdating || !editFileName || !isEditorAllowed}
                 >
@@ -1200,10 +1288,21 @@ function Admin() {
             </div>
           ) : (
             <div className="space-y-6">
-              <form onSubmit={handlePublishSong} className="space-y-4 rounded border border-neutral-700 bg-neutral-950 p-4">
-                <h2 className="text-lg font-semibold">Publish song</h2>
+              <form onSubmit={handlePublishSong} className="admin-panel space-y-4 rounded border border-neutral-700 bg-neutral-950 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold">{isSongEditing ? 'Edit song' : 'Publish song'}</h2>
+                  {isSongEditing ? (
+                    <button
+                      type="button"
+                      onClick={handleCancelSongEdit}
+                      className="admin-link text-sm text-neutral-300 underline underline-offset-4"
+                    >
+                      Cancel edit
+                    </button>
+                  ) : null}
+                </div>
                 <p className="text-sm text-neutral-400">
-                  <code>{generatedSongId || 'song-id'}.md</code>
+                  <code>{isSongEditing ? songEditFileName : `${generatedSongId || 'song-id'}.md`}</code>
                 </p>
 
                 <label className="block">
@@ -1242,13 +1341,15 @@ function Admin() {
                     type="file"
                     accept="image/*"
                     onChange={handleSongCoverArtUpload}
-                    className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
+                    className="admin-file w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"
                   />
                   {songCoverArtFileName ? (
                     <span className="mt-1 block text-xs text-neutral-400">
                       Will publish to /art/{generatedSongId || '[song-id]'}
                       {getFileExtension(songCoverArtFileName) || '.jpg'}
                     </span>
+                  ) : songCoverArtValue ? (
+                    <span className="mt-1 block text-xs text-neutral-400">Current cover art: {songCoverArtValue}</span>
                   ) : null}
                 </label>
 
@@ -1304,20 +1405,23 @@ function Admin() {
                 </label>
 
                 <button
-                  className="rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
+                  className="admin-button admin-primary rounded bg-emerald-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
                   type="submit"
                   disabled={isSongSaving || !isEditorAllowed}
                 >
-                  {isSongSaving ? 'Publishing…' : 'Publish song'}
+                  {isSongSaving ? 'Saving…' : isSongEditing ? 'Update song' : 'Publish song'}
                 </button>
 
                 {songSaveMessage ? <p className="text-sm text-neutral-300">{songSaveMessage}</p> : null}
               </form>
 
               <div className="space-y-4">
-                <ul className="space-y-2">
+                <ul className="admin-list space-y-2">
                   {existingSongs.map((song) => (
-                    <li key={song.fileName} className="flex flex-wrap items-center justify-between gap-2 rounded border border-neutral-700 px-3 py-2">
+                    <li
+                      key={song.fileName}
+                      className="admin-list-item flex flex-wrap items-center justify-between gap-2 rounded border border-neutral-700 px-3 py-2"
+                    >
                       <div>
                         <p className="font-mono text-sm">{song.fileName}</p>
                         <p className="text-xs text-neutral-400">
@@ -1328,7 +1432,7 @@ function Admin() {
                         <button
                           type="button"
                           onClick={() => handleStartSongEdit(song)}
-                          className="rounded border border-neutral-600 px-3 py-1 text-sm disabled:opacity-50"
+                          className="admin-button admin-secondary rounded border border-neutral-600 px-3 py-1 text-sm disabled:opacity-50"
                           disabled={!isEditorAllowed}
                         >
                           Edit
@@ -1337,7 +1441,7 @@ function Admin() {
                           type="button"
                           onClick={() => void handleDeleteSong(song)}
                           disabled={isSongDeleting || !isEditorAllowed}
-                          className="rounded border border-red-500 px-3 py-1 text-sm text-red-300 disabled:opacity-50"
+                          className="admin-button admin-danger rounded border border-red-500 px-3 py-1 text-sm text-red-300 disabled:opacity-50"
                         >
                           Delete
                         </button>
@@ -1346,28 +1450,7 @@ function Admin() {
                   ))}
                 </ul>
 
-                <form onSubmit={handleUpdateSong} className="space-y-3">
-                  <p className="text-sm text-neutral-400">
-                    {songEditFileName ? `Editing ${songEditFileName}` : 'Select a song to edit.'}
-                  </p>
-                  <textarea
-                    value={songEditContent}
-                    onChange={(e) => setSongEditContent(e.target.value)}
-                    rows={14}
-                    className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm"
-                    placeholder="Choose a song above to edit its raw markdown."
-                  />
-
-                  <button
-                    className="rounded bg-blue-400 px-4 py-2 font-semibold text-black disabled:opacity-50"
-                    type="submit"
-                    disabled={isSongUpdating || !songEditFileName || !isEditorAllowed}
-                  >
-                    {isSongUpdating ? 'Saving…' : 'Save song .md changes'}
-                  </button>
-
-                  {songManageMessage ? <p className="text-sm text-neutral-300">{songManageMessage}</p> : null}
-                </form>
+                {songManageMessage ? <p className="text-sm text-neutral-300">{songManageMessage}</p> : null}
               </div>
             </div>
           )}
