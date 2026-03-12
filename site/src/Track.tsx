@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useParams } from 'react-router-dom'
 import { findSongById } from './music/tracks'
@@ -13,10 +13,17 @@ const externalLink = (value: string, label: string) =>
 const Track: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const currentSong = findSongById(id)
+  const [lyricsExpanded, setLyricsExpanded] = useState(false)
+
+  useEffect(() => {
+    setLyricsExpanded(false)
+  }, [currentSong?.id])
 
   if (!currentSong) {
     return <h1>Song not found</h1>
   }
+
+  const hasLyrics = Boolean(currentSong.lyrics)
 
   return (
     <div className="wrapper track-wrapper">
@@ -29,19 +36,30 @@ const Track: React.FC = () => {
       </div>
       <div className="track-info">
         <br />
-        {currentSong.lyrics ? (
-          <ReactMarkdown
-            className="track-lyrics"
-            components={{
-              p: ({ children }) => <p className="p track-lyrics-paragraph">{children}</p>,
-            }}
-          >
-            {currentSong.lyrics}
-          </ReactMarkdown>
+        {hasLyrics ? (
+          <>
+            <button
+              type="button"
+              className="p track-lyrics-toggle"
+              onClick={() => setLyricsExpanded((expanded) => !expanded)}
+            >
+              [lyrics]
+            </button>
+            {lyricsExpanded ? (
+              <ReactMarkdown
+                className="track-lyrics"
+                components={{
+                  p: ({ children }) => <p className="p track-lyrics-paragraph">{children}</p>,
+                }}
+              >
+                {currentSong.lyrics}
+              </ReactMarkdown>
+            ) : null}
+          </>
         ) : (
           <p className="p muted">[no lyrics]</p>
         )}
-        <div className="track-links">
+        <div className={`track-links${hasLyrics && lyricsExpanded ? ' track-links-with-lyrics' : ''}`}>
           {currentSong.spotify ? <>{externalLink(currentSong.spotify, 'spotify')}<br /></> : null}
           {currentSong.bandcamp ? <>{externalLink(currentSong.bandcamp, 'bandcamp')}<br /></> : null}
           {currentSong.soundcloud ? <>{externalLink(currentSong.soundcloud, 'soundcloud')}<br /></> : null}

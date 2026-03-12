@@ -191,12 +191,29 @@ a {
   margin-left: 20px;
 }
 
+.track-lyrics-toggle {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: white;
+  font-weight: 700;
+}
+
+.track-lyrics-toggle:hover {
+  color: white;
+}
+
+.track-lyrics-toggle:focus {
+  outline: none;
+}
+
 .track-lyrics-paragraph {
   white-space: pre-wrap;
   margin: 0;
 }
 
-.track-links {
+.track-links-with-lyrics {
   margin-top: 2.6em;
 }
 
@@ -347,5 +364,3 @@ a {
     max-width: 105px;
 }
 }
-
-
