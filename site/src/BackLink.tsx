@@ -39,10 +39,10 @@ const BackLink: React.FC = () => {
       const wrapperTop = window.scrollY + wrapperRect.top;
       const wrapperBottom = wrapperTop + wrapperRect.height;
       const fixedButtonTop = window.scrollY + window.innerHeight - 44;
-      const needsAbsolutePosition = wrapperBottom + 24 >= fixedButtonTop;
+      const needsAbsolutePosition = wrapperBottom + 12 >= fixedButtonTop;
 
       setTrackBackAbsolute(needsAbsolutePosition);
-      setTrackBackStyle(needsAbsolutePosition ? { top: `${wrapperBottom + 24}px` } : {});
+      setTrackBackStyle(needsAbsolutePosition ? { top: `${wrapperBottom + 12}px` } : {});
     };
 
     updateTrackBackPosition();
@@ -107,3 +107,5 @@ const BackLink: React.FC = () => {
 };
 
 export default BackLink;
+
+

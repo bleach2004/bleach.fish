@@ -244,7 +244,7 @@ a {
   width: min(var(--content-lane-width), calc(100vw - 2rem));
   margin-left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
   padding-top: 40px;
-  padding-bottom: 5rem;
+  padding-bottom: 2.75rem;
 }
 
 .post-wrapper {
@@ -350,7 +350,7 @@ a {
     width: auto;
     margin-left: 0;
     padding-top: 25px;
-    padding-bottom: 5rem;
+    padding-bottom: 2.75rem;
   }
 
   .h2 {
@@ -391,5 +391,6 @@ a {
     max-width: 105px;
 }
 }
+
 
 
