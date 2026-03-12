@@ -19,6 +19,14 @@ const Track: React.FC = () => {
     setLyricsExpanded(false)
   }, [currentSong?.id])
 
+  useEffect(() => {
+    document.body.classList.add('track-page')
+
+    return () => {
+      document.body.classList.remove('track-page')
+    }
+  }, [])
+
   if (!currentSong) {
     return <h1>Song not found</h1>
   }

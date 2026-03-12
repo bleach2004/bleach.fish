@@ -28,6 +28,11 @@ body {
   min-height: 100dvh;
 }
 
+body.track-page {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 @media (max-width: 668px) {
   body {
     background-image: url('/mobile.png');
@@ -181,6 +186,11 @@ a {
   left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
 }
 
+.track-back-button-absolute {
+  position: absolute;
+  bottom: auto;
+}
+
 .track-container {
   display: flex;
   align-items: center;
@@ -221,11 +231,20 @@ a {
   margin-top: 2.6em;
 }
 
-
 .wrapper {
   left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
   top: 40px;
   position: fixed;
+}
+
+.wrapper.track-wrapper {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: min(var(--content-lane-width), calc(100vw - 2rem));
+  margin-left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
+  padding-top: 40px;
+  padding-bottom: 5rem;
 }
 
 .post-wrapper {
@@ -287,12 +306,9 @@ a {
 
 
   .track-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100svh;
-    flex-direction: column;  /* Stack items vertically */
-
+    display: block;
+    height: auto;
+    min-height: auto;
   }
   .skin {
     display: flex;
@@ -328,6 +344,13 @@ a {
   .track-info {
     margin-top: 20px;
     text-align: center;
+  }
+
+  .wrapper.track-wrapper {
+    width: auto;
+    margin-left: 0;
+    padding-top: 25px;
+    padding-bottom: 5rem;
   }
 
   .h2 {
@@ -368,4 +391,5 @@ a {
     max-width: 105px;
 }
 }
+
 
