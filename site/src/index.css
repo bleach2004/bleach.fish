@@ -213,6 +213,10 @@ a {
   margin: 0;
 }
 
+.track-lyrics-paragraph + .track-lyrics-paragraph {
+  margin-top: 1.3em;
+}
+
 .track-links-with-lyrics {
   margin-top: 2.6em;
 }
@@ -364,3 +368,4 @@ a {
     max-width: 105px;
 }
 }
+
