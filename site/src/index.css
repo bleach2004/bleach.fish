@@ -191,6 +191,15 @@ a {
   margin-left: 20px;
 }
 
+.track-lyrics-paragraph {
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.track-links {
+  margin-top: 2.6em;
+}
+
 
 .wrapper {
   left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
@@ -338,3 +347,5 @@ a {
     max-width: 105px;
 }
 }
+
+

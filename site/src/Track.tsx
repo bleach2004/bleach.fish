@@ -31,8 +31,9 @@ const Track: React.FC = () => {
         <br />
         {currentSong.lyrics ? (
           <ReactMarkdown
+            className="track-lyrics"
             components={{
-              p: ({ children }) => <p className="p">{children}</p>,
+              p: ({ children }) => <p className="p track-lyrics-paragraph">{children}</p>,
             }}
           >
             {currentSong.lyrics}
@@ -40,9 +41,11 @@ const Track: React.FC = () => {
         ) : (
           <p className="p muted">[no lyrics]</p>
         )}
-        {currentSong.spotify ? <>{externalLink(currentSong.spotify, 'spotify')}<br /></> : null}
-        {currentSong.bandcamp ? <>{externalLink(currentSong.bandcamp, 'bandcamp')}<br /></> : null}
-        {currentSong.soundcloud ? <>{externalLink(currentSong.soundcloud, 'soundcloud')}<br /></> : null}
+        <div className="track-links">
+          {currentSong.spotify ? <>{externalLink(currentSong.spotify, 'spotify')}<br /></> : null}
+          {currentSong.bandcamp ? <>{externalLink(currentSong.bandcamp, 'bandcamp')}<br /></> : null}
+          {currentSong.soundcloud ? <>{externalLink(currentSong.soundcloud, 'soundcloud')}<br /></> : null}
+        </div>
         <br />
         <p className="p">{currentSong.releaseDate}</p>
         <br />
