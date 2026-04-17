@@ -29,17 +29,19 @@ posts.sort((a, b) => (a.date < b.date ? 1 : -1));
 
 const Diary: React.FC = () => {
   return (
-    <div className="wrapper">
-      <div>
-        {posts.map((post) => (
-          <Link
-            key={post.id}
-            to={`/diary/${post.id}`}
-            className="p text-white postlink"
-          >
-            {post.date || post.id}
-          </Link>
-        ))}
+    <div className="wrapper diary-index-wrapper">
+      <div className="desktop-lane-inset">
+        <div className="diary-link-list">
+          {posts.map((post) => (
+            <Link
+              key={post.id}
+              to={`/diary/${post.id}`}
+              className="p text-white postlink"
+            >
+              {post.date || post.id}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

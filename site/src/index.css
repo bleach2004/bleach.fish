@@ -3,13 +3,13 @@
   --primary-color: rgb(172, 172, 172);
   --secondary-color: rgb(77, 77, 77);
   --side-image-width: clamp(180px, 24vw, 320px);
-  --center-lane-gap: clamp(24px, 4vw, 56px);
-  --content-lane-width: calc(100vw - (2 * (var(--side-image-width) + var(--center-lane-gap))) - 4rem);
+  --content-lane-width: calc(100vw - (2 * var(--side-image-width)));
   --media-width: clamp(130px, 32vw, 220px);
   --post-media-width: clamp(200px, 42vw, 320px);
+  --post-text-indent: clamp(24px, 4vw, 56px);
   --times-text-size: 20px;
   --desktop-left-width: var(--side-image-width);
-  --desktop-left-content-gap: var(--center-lane-gap);
+  --desktop-left-content-gap: 0px;
 }
 
 html, body {
@@ -34,14 +34,24 @@ body.track-page {
 }
 
 @media (max-width: 668px) {
-  body {
+  body,
+  body.compact-layout {
     background-image: url('/mobile.png');
-    background-position: center top;
+    background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: scroll;
     min-height: 100dvh;
   }
+}
+
+body.compact-layout {
+  background-image: url('/mobile.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: scroll;
+  min-height: 100dvh;
 }
 
 @font-face {
@@ -97,18 +107,38 @@ p, a {
 
 .diary-text {
   font-family: 'Times New Roman', Times, serif;
-  font-size: var(--times-text-size);
+  font-size: clamp(11px, calc(var(--content-lane-width) / 25), var(--times-text-size));
   color: 	white;
   white-space: pre-wrap;
 }
 
 .diary-text :where(p, li, a, blockquote) {
-  font-size: var(--times-text-size);
+  font-size: inherit;
+}
+
+.post-wrapper .diary-text {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+  text-align: left;
+}
+
+.desktop-lane-inset {
+  box-sizing: border-box;
+  width: 100%;
+  padding-left: var(--post-text-indent);
 }
 
 .postlink {
   line-height: 32px;
-  display: block;
+  display: inline-block;
+}
+
+.diary-link-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .meat a {
@@ -152,10 +182,11 @@ a {
 
 .audio-grid {
   display: grid;
-  width: min(var(--content-lane-width), calc(100vw - 4rem));
+  width: 100%;
   padding: 0 0.75rem;
   grid-template-columns: repeat(auto-fit, 147px);
   gap: 16px;
+  justify-content: start;
 }
 
 .audio-grid .cover {
@@ -183,7 +214,7 @@ a {
   font-size: var(--times-text-size);
   position: fixed;
   bottom: 20px;
-  left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
+  left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap) + var(--post-text-indent));
 }
 
 .track-back-button-absolute {
@@ -199,6 +230,14 @@ a {
 
 .track-title {
   margin-left: 20px;
+}
+
+.track-title .h2 {
+  font-size: clamp(22px, calc(var(--content-lane-width) / 14), 32px);
+}
+
+.track-title .h3 {
+  font-size: clamp(17px, calc(var(--content-lane-width) / 19), 23px);
 }
 
 .track-lyrics-toggle {
@@ -235,22 +274,41 @@ a {
   left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
   top: 40px;
   position: fixed;
+  width: var(--content-lane-width);
+}
+
+.audio-page-wrapper {
+  left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap) + var(--post-text-indent));
+  width: calc(var(--content-lane-width) - var(--post-text-indent));
+}
+
+.audio-page-wrapper .audio-grid {
+  padding-left: 0;
 }
 
 .wrapper.track-wrapper {
   position: relative;
   left: auto;
+  right: auto;
   top: auto;
-  width: min(var(--content-lane-width), calc(100vw - 2rem));
+  box-sizing: border-box;
+  width: var(--content-lane-width);
   margin-left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
+  margin-right: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
+  padding-left: var(--post-text-indent);
+  padding-right: 0.75rem;
   padding-top: 40px;
-  padding-bottom: 2.75rem;
+  padding-bottom: 1.25rem;
 }
 
 .post-wrapper {
   left: calc(var(--desktop-left-width) + var(--desktop-left-content-gap));
   transform: none;
-  width: min(var(--content-lane-width), calc(100vw - 2rem));
+  width: var(--content-lane-width);
+  min-height: calc(100dvh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .post-image {
@@ -258,14 +316,14 @@ a {
   width: var(--post-media-width);
   max-width: 100%;
   height: auto;
-  margin: 1rem 0 0;
+  margin: 1rem auto 0;
 }
 
 .post-audio {
   display: block;
   width: var(--post-media-width);
   max-width: 100%;
-  margin-top: 1rem;
+  margin: 1rem auto 0;
 }
 
 .scenery-wrapper {
@@ -284,15 +342,48 @@ a {
     --times-text-size: 18px;
   }
 
+  .diary-text {
+    font-size: clamp(11px, 3.7vw, var(--times-text-size));
+  }
+
   .wrapper {
     padding: 25px;
     position: static;
+    width: auto;
+  }
+
+  .audio-page-wrapper {
+    left: auto;
+    width: auto;
+  }
+
+  .audio-page-wrapper .audio-grid {
+    padding-left: 0.5rem;
   }
 
   .post-wrapper {
     left: auto;
     transform: none;
     width: auto;
+    min-height: auto;
+    display: block;
+  }
+
+  .post-wrapper .diary-text {
+    width: auto;
+    max-width: none;
+    margin-inline: 0;
+    padding-left: 0;
+  }
+
+  .post-image,
+  .post-audio {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .desktop-lane-inset {
+    padding-left: 0;
   }
 
   .back-button {
@@ -324,21 +415,30 @@ a {
   }
 
   .audio-grid {
-    width: calc(100vw - 3rem);
+    width: 100%;
     padding: 0 0.5rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(105px, 109px));
     gap: 12px;
+    justify-content: center;
   }
 
   .audio-grid .cover {
     max-width: 109px;
-    width: 100%;
+    width: 109px;
   }
   
 
   .track-title {
     margin-left: 0;
     text-align: center;
+  }
+
+  .track-title .h2 {
+    font-size: 1.5em;
+  }
+
+  .track-title .h3 {
+    font-size: 1.4em;
   }
   
   .track-info {
@@ -349,8 +449,10 @@ a {
   .wrapper.track-wrapper {
     width: auto;
     margin-left: 0;
+    margin-right: 0;
+    padding-inline: 0;
     padding-top: 25px;
-    padding-bottom: 2.75rem;
+    padding-bottom: 1.25rem;
   }
 
   .h2 {
@@ -360,6 +462,130 @@ a {
   .h3 {
     font-size: 1.4em;
   }
+}
+
+body.compact-layout {
+  --times-text-size: 18px;
+}
+
+body.compact-layout .diary-text {
+  font-size: clamp(11px, 3.7vw, var(--times-text-size));
+}
+
+body.compact-layout .wrapper {
+  padding: 25px;
+  position: static;
+  width: auto;
+}
+
+body.compact-layout .audio-page-wrapper {
+  left: auto;
+  width: auto;
+}
+
+body.compact-layout .audio-page-wrapper .audio-grid {
+  padding-left: 0.5rem;
+}
+
+body.compact-layout .post-wrapper {
+  left: auto;
+  transform: none;
+  width: auto;
+  min-height: auto;
+  display: block;
+}
+
+body.compact-layout .post-wrapper .diary-text {
+  width: auto;
+  max-width: none;
+  margin-inline: 0;
+  padding-left: 0;
+}
+
+body.compact-layout .post-image,
+body.compact-layout .post-audio {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+body.compact-layout .desktop-lane-inset {
+  padding-left: 0;
+}
+
+body.compact-layout .back-button {
+  left: 25px;
+}
+
+body.compact-layout .track-container {
+  flex-direction: column;
+  align-items: center;
+}
+
+body.compact-layout .track-wrapper {
+  display: block;
+  height: auto;
+  min-height: auto;
+}
+
+body.compact-layout .skin {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100dvh;
+  padding-left: 0;
+}
+
+body.compact-layout .cover-static {
+  width: 40%;
+  margin-bottom: 20px;
+}
+
+body.compact-layout .audio-grid {
+  width: 100%;
+  padding: 0 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 109px));
+  gap: 12px;
+  justify-content: center;
+}
+
+body.compact-layout .audio-grid .cover {
+  max-width: 109px;
+  width: 109px;
+}
+
+body.compact-layout .track-title {
+  margin-left: 0;
+  text-align: center;
+}
+
+body.compact-layout .track-title .h2 {
+  font-size: 1.5em;
+}
+
+body.compact-layout .track-title .h3 {
+  font-size: 1.4em;
+}
+
+body.compact-layout .track-info {
+  margin-top: 20px;
+  text-align: center;
+}
+
+body.compact-layout .wrapper.track-wrapper {
+  width: auto;
+  margin-left: 0;
+  margin-right: 0;
+  padding-inline: 0;
+  padding-top: 25px;
+  padding-bottom: 1.25rem;
+}
+
+body.compact-layout .h2 {
+  font-size: 1.5em;
+}
+
+body.compact-layout .h3 {
+  font-size: 1.4em;
 }
 
 @media (min-width: 669px) and (max-width: 1024px) {
@@ -386,11 +612,12 @@ a {
   }
 
   .audio-grid .cover {
-    width: 100%;
+    width: 105px;
     margin-bottom: 0;
     max-width: 105px;
 }
 }
+
 
 
 

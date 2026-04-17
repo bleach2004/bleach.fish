@@ -3,7 +3,7 @@ import { songs } from './music/tracks'
 
 const Audio: React.FC = () => {
   return (
-    <div className="wrapper">
+    <div className="wrapper audio-page-wrapper">
       <div className="audio-grid">
         {songs.map((song) => (
           <Link key={song.id} to={`/audio/${song.id}`} style={{ textDecoration: 'none', display: 'block' }}>
