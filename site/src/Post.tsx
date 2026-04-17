@@ -67,22 +67,36 @@ const Post: React.FC = () => {
 
   return (
     <div className="wrapper post-wrapper">
-      {currentPost.content && (
-        <div className="diary-text">
-          <ReactMarkdown components={markdownComponents}>{currentPost.content}</ReactMarkdown>
+      {currentPost.image ? (
+        <div className="post-media-column">
+          <img
+            className="post-image"
+            src={resolveMediaSrc(currentPost.image, "/img/")}
+            alt=""
+          />
+
+          {currentPost.content && (
+            <div className="diary-text">
+              <ReactMarkdown components={markdownComponents}>{currentPost.content}</ReactMarkdown>
+            </div>
+          )}
+
+          {currentPost.audio && (
+            <audio className="post-audio" controls src={resolveMediaSrc(currentPost.audio, "/audio/")} />
+          )}
         </div>
-      )}
+      ) : (
+        <>
+          {currentPost.content && (
+            <div className="diary-text">
+              <ReactMarkdown components={markdownComponents}>{currentPost.content}</ReactMarkdown>
+            </div>
+          )}
 
-      {currentPost.image && (
-        <img
-          className="post-image"
-          src={resolveMediaSrc(currentPost.image, "/img/")}
-          alt=""
-        />
-      )}
-
-      {currentPost.audio && (
-        <audio className="post-audio" controls src={resolveMediaSrc(currentPost.audio, "/audio/")} />
+          {currentPost.audio && (
+            <audio className="post-audio" controls src={resolveMediaSrc(currentPost.audio, "/audio/")} />
+          )}
+        </>
       )}
     </div>
   );
